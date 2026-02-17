@@ -32,7 +32,6 @@ jobs:
         with: { node-version: "22" }
 
       - uses: pnpm/action-setup@v4
-        with: { version: 9 }
 
       - uses: dtolnay/rust-toolchain@stable
         with: { targets: x86_64-pc-windows-msvc }
