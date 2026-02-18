@@ -101,11 +101,11 @@ jobs:
             if ($version -match '-') {
               echo "bundles=nsis" >> $env:GITHUB_OUTPUT
               echo "is_prerelease=true" >> $env:GITHUB_OUTPUT
-              echo "Found pre-release: $tag (version $version) — building NSIS only"
+              echo "Found pre-release: $tag v$version - building NSIS only"
             } else {
               echo "bundles=nsis,msi" >> $env:GITHUB_OUTPUT
               echo "is_prerelease=false" >> $env:GITHUB_OUTPUT
-              echo "Found release: $tag (version $version) — building NSIS + MSI"
+              echo "Found release: $tag v$version - building NSIS + MSI"
             }
           } else {
             echo "No ltk-manager release found, skipping build"

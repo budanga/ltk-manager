@@ -29,11 +29,9 @@ pub fn ensure_overlay(library: &ModLibrary, settings: &Settings) -> AppResult<Pa
     // Get active profile slug and enabled mods
     let (profile_slug, enabled_mods) = library.get_enabled_mods_for_overlay(settings)?;
 
-    // Use profile-specific overlay directory
-    let overlay_root = storage_dir
-        .join("profiles")
-        .join(profile_slug.as_str())
-        .join("overlay");
+    // Use profile-specific overlay and state directories
+    let profile_dir = storage_dir.join("profiles").join(profile_slug.as_str());
+    let overlay_root = profile_dir.join("overlay");
 
     tracing::info!("Overlay: storage_dir={}", storage_dir.display());
     tracing::info!("Overlay: profile_slug={}", profile_slug);
@@ -55,6 +53,9 @@ pub fn ensure_overlay(library: &ModLibrary, settings: &Settings) -> AppResult<Pa
         .map_err(|p| AppError::Other(format!("Non-UTF-8 game directory path: {}", p.display())))?;
     let utf8_overlay_root = Utf8PathBuf::from_path_buf(overlay_root.clone())
         .map_err(|p| AppError::Other(format!("Non-UTF-8 overlay root path: {}", p.display())))?;
+    let utf8_state_dir = Utf8PathBuf::from_path_buf(profile_dir).map_err(|p| {
+        AppError::Other(format!("Non-UTF-8 profile directory path: {}", p.display()))
+    })?;
 
     // Build WAD blocklist from settings
     let mut blocked_wads = Vec::new();
@@ -64,28 +65,29 @@ pub fn ensure_overlay(library: &ModLibrary, settings: &Settings) -> AppResult<Pa
 
     // Build overlay using ltk_overlay crate
     let app_handle_clone = library.app_handle().clone();
-    let mut builder = ltk_overlay::OverlayBuilder::new(utf8_game_dir, utf8_overlay_root)
-        .with_blocked_wads(blocked_wads)
-        .with_progress(move |progress| {
-            // Convert ltk_overlay progress to our format
-            let stage = match progress.stage {
-                ltk_overlay::OverlayStage::Indexing => "indexing",
-                ltk_overlay::OverlayStage::CollectingOverrides => "collecting",
-                ltk_overlay::OverlayStage::PatchingWad => "patching",
-                ltk_overlay::OverlayStage::ApplyingStringOverrides => "strings",
-                ltk_overlay::OverlayStage::Complete => "complete",
-            };
+    let mut builder =
+        ltk_overlay::OverlayBuilder::new(utf8_game_dir, utf8_overlay_root, utf8_state_dir)
+            .with_blocked_wads(blocked_wads)
+            .with_progress(move |progress| {
+                // Convert ltk_overlay progress to our format
+                let stage = match progress.stage {
+                    ltk_overlay::OverlayStage::Indexing => "indexing",
+                    ltk_overlay::OverlayStage::CollectingOverrides => "collecting",
+                    ltk_overlay::OverlayStage::PatchingWad => "patching",
+                    ltk_overlay::OverlayStage::ApplyingStringOverrides => "strings",
+                    ltk_overlay::OverlayStage::Complete => "complete",
+                };
 
-            let _ = app_handle_clone.emit(
-                "overlay-progress",
-                OverlayProgress {
-                    stage: stage.to_string(),
-                    current_file: progress.current_file,
-                    current: progress.current,
-                    total: progress.total,
-                },
-            );
-        });
+                let _ = app_handle_clone.emit(
+                    "overlay-progress",
+                    OverlayProgress {
+                        stage: stage.to_string(),
+                        current_file: progress.current_file,
+                        current: progress.current,
+                        total: progress.total,
+                    },
+                );
+            });
 
     builder.set_enabled_mods(enabled_mods);
 
