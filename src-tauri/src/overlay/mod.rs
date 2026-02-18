@@ -109,7 +109,6 @@ pub fn invalidate_overlay(app_handle: &AppHandle, settings: &Settings) -> AppRes
     let overlay_json = storage_dir
         .join("profiles")
         .join(active_profile.slug.as_str())
-        .join("overlay")
         .join("overlay.json");
     if overlay_json.exists() {
         std::fs::remove_file(&overlay_json)?;

@@ -9,5 +9,8 @@ pnpm-lock.yaml
 src/routeTree.gen.ts
 gen/
 
+# Licenses
+LICENSE-CSLOL.md
+
 # Tauri
 src-tauri/
