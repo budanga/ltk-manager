@@ -29,6 +29,7 @@ interface SortableModListProps {
   disabled?: boolean;
   onToggle: (modId: string, enabled: boolean) => void;
   onUninstall: (modId: string) => void;
+  onViewDetails?: (mod: InstalledMod) => void;
   children: React.ReactNode;
 }
 
@@ -39,6 +40,7 @@ export function SortableModList({
   disabled,
   onToggle,
   onUninstall,
+  onViewDetails,
   children,
 }: SortableModListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -96,6 +98,7 @@ export function SortableModList({
               viewMode={viewMode}
               onToggle={onToggle}
               onUninstall={onUninstall}
+              onViewDetails={onViewDetails}
             />
           </div>
         ) : null}

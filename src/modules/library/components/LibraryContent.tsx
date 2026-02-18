@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LuPlus, LuSearch, LuUpload } from "react-icons/lu";
 
 import { Button } from "@/components";
@@ -6,6 +7,7 @@ import type { useLibraryActions } from "@/modules/library/api";
 import { useLibraryViewMode } from "@/modules/library/api";
 
 import { ModCard } from "./ModCard";
+import { ModDetailsDialog } from "./ModDetailsDialog";
 import { SortableModCard } from "./SortableModCard";
 import { SortableModList } from "./SortableModList";
 
@@ -34,6 +36,7 @@ export function LibraryContent({
   isPatcherActive,
 }: LibraryContentProps) {
   const { viewMode } = useLibraryViewMode();
+  const [detailsMod, setDetailsMod] = useState<InstalledMod | null>(null);
   const isSearching = searchQuery.length > 0;
 
   const filteredMods = mods.filter(
@@ -69,29 +72,38 @@ export function LibraryContent({
   const Card = isSearching ? ModCard : SortableModCard;
 
   return (
-    <div className="flex-1 overflow-auto p-6">
-      <SortableModList
-        mods={filteredMods}
-        viewMode={viewMode}
-        onReorder={actions.handleReorder}
-        disabled={isSearching || isPatcherActive}
-        onToggle={actions.handleToggleMod}
-        onUninstall={actions.handleUninstallMod}
-      >
-        <div className={gridClass(viewMode, !isSearching)}>
-          {filteredMods.map((mod) => (
-            <Card
-              key={mod.id}
-              mod={mod}
-              viewMode={viewMode}
-              onToggle={actions.handleToggleMod}
-              onUninstall={actions.handleUninstallMod}
-              disabled={isPatcherActive}
-            />
-          ))}
-        </div>
-      </SortableModList>
-    </div>
+    <>
+      <div className="flex-1 overflow-auto p-6">
+        <SortableModList
+          mods={filteredMods}
+          viewMode={viewMode}
+          onReorder={actions.handleReorder}
+          disabled={isSearching || isPatcherActive}
+          onToggle={actions.handleToggleMod}
+          onUninstall={actions.handleUninstallMod}
+          onViewDetails={setDetailsMod}
+        >
+          <div className={gridClass(viewMode, !isSearching)}>
+            {filteredMods.map((mod) => (
+              <Card
+                key={mod.id}
+                mod={mod}
+                viewMode={viewMode}
+                onToggle={actions.handleToggleMod}
+                onUninstall={actions.handleUninstallMod}
+                onViewDetails={setDetailsMod}
+                disabled={isPatcherActive}
+              />
+            ))}
+          </div>
+        </SortableModList>
+      </div>
+      <ModDetailsDialog
+        open={detailsMod !== null}
+        mod={detailsMod}
+        onClose={() => setDetailsMod(null)}
+      />
+    </>
   );
 }
 
