@@ -11,6 +11,7 @@ git_release_type = "auto"
 [[package]]
 name = "ltk-manager"
 publish = false
+git_only = true
 changelog_update = true
 
 [changelog]
