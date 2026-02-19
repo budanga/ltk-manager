@@ -12,5 +12,8 @@ gen/
 # Licenses
 LICENSE-CSLOL.md
 
+# CI/CD
+.github/
+
 # Tauri
 src-tauri/
