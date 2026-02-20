@@ -118,20 +118,8 @@ impl Workshop {
 
         let config_path = find_config_file(&path)
             .ok_or_else(|| AppError::ProjectNotFound(args.project_path.clone()))?;
+        let mut mod_project = load_mod_project(&config_path)?;
 
-        // Load existing config
-        let contents = fs::read_to_string(&config_path)?;
-        let mut mod_project: ModProject = if config_path
-            .extension()
-            .map(|e| e == "toml")
-            .unwrap_or(false)
-        {
-            toml::from_str(&contents).map_err(|e| AppError::Other(e.to_string()))?
-        } else {
-            serde_json::from_str(&contents)?
-        };
-
-        // Update fields
         mod_project.display_name = args.display_name;
         mod_project.version = args.version;
         mod_project.description = args.description;
@@ -144,7 +132,6 @@ impl Workshop {
             })
             .collect();
 
-        // Save as JSON (always save as JSON for consistency)
         let json_config_path = path.join("mod.config.json");
         let config_content = serde_json::to_string_pretty(&mod_project)?;
         fs::write(&json_config_path, config_content)?;

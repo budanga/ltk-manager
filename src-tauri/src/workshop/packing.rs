@@ -200,7 +200,8 @@ impl Workshop {
         }
 
         let webp_data = if extension == "webp" {
-            // WebP files are used as-is
+            image::open(&source_path)
+                .map_err(|e| AppError::ValidationFailed(format!("Failed to open image: {}", e)))?;
             fs::read(&source_path)?
         } else {
             // Encode as lossy WebP to avoid lossless bloat (the image crate's
@@ -212,12 +213,17 @@ impl Workshop {
             encoder.encode(90.0).to_vec()
         };
 
-        // Remove existing thumbnails for backwards compatibility
-        let _ = fs::remove_file(project_dir.join("thumbnail.webp"));
-        let _ = fs::remove_file(project_dir.join("thumbnail.png"));
-
         let target_path = project_dir.join("thumbnail.webp");
-        fs::write(&target_path, webp_data)?;
+        let tmp_path = project_dir.join("thumbnail.webp.tmp");
+
+        fs::write(&tmp_path, webp_data)?;
+
+        if target_path.exists() {
+            let _ = fs::remove_file(&target_path);
+        }
+        fs::rename(&tmp_path, &target_path)?;
+
+        let _ = fs::remove_file(project_dir.join("thumbnail.png"));
 
         // Persist the thumbnail reference in mod.config.json
         let config_path = find_config_file(&project_dir)
