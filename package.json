@@ -14,7 +14,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run format:check",
-    "release": "powershell -ExecutionPolicy Bypass -File scripts/release.ps1",
     "prepare": "husky"
   },
   "lint-staged": {
