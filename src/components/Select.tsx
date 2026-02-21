@@ -51,10 +51,10 @@ export interface SelectValueProps extends Omit<BaseSelect.Value.Props, "classNam
   children?: BaseSelect.Value.Props["children"];
 }
 
-export const SelectValue = ({ className, placeholder, children, ...props }: SelectValueProps) => {
+export const SelectValue = ({ className, children, ...props }: SelectValueProps) => {
   return (
     <BaseSelect.Value className={className} {...props}>
-      {children ?? ((value: unknown) => (value as string) || placeholder || "")}
+      {children}
     </BaseSelect.Value>
   );
 };
@@ -93,11 +93,23 @@ export interface SelectPositionerProps extends Omit<BaseSelect.Positioner.Props,
 }
 
 export const SelectPositioner = forwardRef<HTMLDivElement, SelectPositionerProps>(
-  ({ className, children, sideOffset = 4, ...props }, ref) => {
+  (
+    {
+      className,
+      children,
+      side = "bottom",
+      sideOffset = 4,
+      alignItemWithTrigger = false,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <BaseSelect.Positioner
         ref={ref}
+        side={side}
         sideOffset={sideOffset}
+        alignItemWithTrigger={alignItemWithTrigger}
         className={twMerge("z-50", className)}
         {...props}
       >
@@ -120,6 +132,7 @@ export const SelectPopup = forwardRef<HTMLDivElement, SelectPopupProps>(
       <BaseSelect.Popup
         ref={ref}
         className={twMerge(
+          "max-h-60 overflow-y-auto",
           "rounded-lg border border-surface-600 bg-surface-700 py-1 shadow-xl",
           "animate-fade-in",
           "data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
@@ -263,7 +276,6 @@ export function SelectField({
   description,
   error,
   required,
-  placeholder,
   options,
   value,
   defaultValue,
@@ -292,7 +304,7 @@ export function SelectField({
         name={name}
       >
         <SelectTrigger hasError={!!error} className={triggerClassName}>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue />
           <SelectIcon />
         </SelectTrigger>
         <SelectPortal>

@@ -129,7 +129,6 @@ export function SelectField({
   label,
   description,
   required,
-  placeholder,
   options,
   disabled,
   className,
@@ -148,7 +147,7 @@ export function SelectField({
         disabled={disabled}
       >
         <SelectTrigger hasError={hasError} className={triggerClassName}>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue />
           <SelectIcon />
         </SelectTrigger>
         <SelectPortal>
