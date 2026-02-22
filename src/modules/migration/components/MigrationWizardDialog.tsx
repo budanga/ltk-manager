@@ -1,4 +1,5 @@
-import { LuFolderOpen, LuLoader } from "react-icons/lu";
+import { useMemo, useState } from "react";
+import { LuFolderOpen, LuLoader, LuSearch } from "react-icons/lu";
 
 import { Button, Checkbox, Dialog } from "@/components";
 import type { CslolModInfo } from "@/lib/tauri";
@@ -148,11 +149,22 @@ function SelectStep({
   onSelectAll,
   onSelectNone,
 }: SelectStepProps) {
+  const [search, setSearch] = useState("");
+
+  const filteredMods = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return mods;
+    return mods.filter(
+      (mod) => mod.name.toLowerCase().includes(query) || mod.author?.toLowerCase().includes(query),
+    );
+  }, [mods, search]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-surface-300">
-          Found {mods.length} mod{mods.length !== 1 ? "s" : ""}. Select which to import:
+          {selectedFolders.size} of {mods.length} mod{mods.length !== 1 ? "s" : ""} selected
+          {search.trim() && ` \u00b7 Showing ${filteredMods.length} of ${mods.length}`}
         </p>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={onSelectAll}>
@@ -163,8 +175,25 @@ function SelectStep({
           </Button>
         </div>
       </div>
-      <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-surface-700 p-2">
-        {mods.map((mod) => (
+
+      <div className="relative">
+        <LuSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-surface-500" />
+        <input
+          type="text"
+          placeholder="Search mods..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-surface-600 bg-surface-800 py-2 pr-4 pl-10 text-sm text-surface-100 placeholder:text-surface-500 focus:border-transparent focus:ring-2 focus:ring-brand-500 focus:outline-none"
+        />
+      </div>
+
+      <div className="max-h-96 space-y-1 overflow-y-auto rounded-lg border border-surface-700 p-2">
+        {filteredMods.length === 0 && (
+          <p className="py-6 text-center text-sm text-surface-400">
+            No mods matching &ldquo;{search.trim()}&rdquo;
+          </p>
+        )}
+        {filteredMods.map((mod) => (
           <label
             key={mod.folderName}
             className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 hover:bg-surface-700/50"
