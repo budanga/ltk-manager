@@ -226,7 +226,9 @@ function WorkshopIndex() {
           importFromModpkg.isPending ||
           peekFantome.isPending ||
           importFromFantome.isPending ||
-          Boolean(fantomeProgress)
+          importFromGitRepo.isPending ||
+          Boolean(fantomeProgress) ||
+          Boolean(gitImportProgress)
         }
       />
 
