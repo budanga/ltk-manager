@@ -2,9 +2,9 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
 
 import type { BulkInstallResult, CslolModInfo } from "@/lib/tauri";
-import { useInstallProgress } from "@/modules/library";
 
 import { useImportCslolMods } from "./useImportCslolMods";
+import { useMigrationProgress } from "./useMigrationProgress";
 import { useScanCslolMods } from "./useScanCslolMods";
 
 export type WizardStep = "browse" | "select" | "importing" | "results";
@@ -18,7 +18,7 @@ export function useMigrationWizard(onClose: () => void) {
 
   const scanMods = useScanCslolMods();
   const importMods = useImportCslolMods();
-  const { progress, reset: resetProgress } = useInstallProgress();
+  const { progress, reset: resetProgress } = useMigrationProgress();
 
   function reset() {
     setStep("browse");

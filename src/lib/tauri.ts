@@ -102,6 +102,15 @@ export interface CslolModInfo {
   description: string;
 }
 
+export type MigrationPhase = "packaging" | "installing";
+
+export interface MigrationProgress {
+  phase: MigrationPhase;
+  current: number;
+  total: number;
+  currentFile: string;
+}
+
 export interface PatcherConfig {
   logFile?: string | null;
   timeoutMs?: number | null;

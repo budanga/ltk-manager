@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
+use tauri::{AppHandle, Emitter};
 
-use super::{BulkInstallResult, ModLibrary};
+use super::{BulkInstallResult, MigrationPhase, MigrationProgress, ModLibrary};
 
 /// Metadata for a discovered cslol-manager mod, shown in the UI selection step.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,9 +77,12 @@ pub fn scan_cslol_directory(dir: &Path) -> AppResult<Vec<CslolModInfo>> {
 
 /// Import selected cslol-manager mods by creating temporary `.fantome` ZIPs
 /// and piping them through the existing install pipeline.
+///
+/// Emits `"migration-progress"` events during both the packaging and installing phases.
 pub fn import_cslol_mods(
     library: &ModLibrary,
     settings: &Settings,
+    app_handle: &AppHandle,
     cslol_dir: &Path,
     folders: &[String],
 ) -> AppResult<BulkInstallResult> {
@@ -86,9 +90,20 @@ pub fn import_cslol_mods(
     let temp_dir = std::env::temp_dir().join("ltk-migration");
     fs::create_dir_all(&temp_dir)?;
 
+    let total = folders.len();
     let mut temp_paths: Vec<String> = Vec::new();
 
-    for folder in folders {
+    for (i, folder) in folders.iter().enumerate() {
+        let _ = app_handle.emit(
+            "migration-progress",
+            MigrationProgress {
+                phase: MigrationPhase::Packaging,
+                current: i + 1,
+                total,
+                current_file: folder.clone(),
+            },
+        );
+
         let mod_dir = installed_dir.join(folder);
         if !mod_dir.is_dir() {
             tracing::warn!("Skipping missing folder: {}", folder);
@@ -108,7 +123,6 @@ pub fn import_cslol_mods(
 
     let result = library.install_mods_from_packages(settings, &temp_paths);
 
-    // Clean up temp files
     for path in &temp_paths {
         let _ = fs::remove_file(path);
     }

@@ -210,6 +210,23 @@ pub struct InstallProgress {
     pub current_file: String,
 }
 
+/// Progress event emitted during cslol migration (both packaging and installing phases).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrationProgress {
+    pub phase: MigrationPhase,
+    pub current: usize,
+    pub total: usize,
+    pub current_file: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MigrationPhase {
+    Packaging,
+    Installing,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct LibraryIndex {

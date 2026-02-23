@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { LuFolderOpen, LuLoader, LuSearch } from "react-icons/lu";
 
-import { Button, Checkbox, Dialog } from "@/components";
-import type { CslolModInfo } from "@/lib/tauri";
-import { BulkInstallProgress, BulkInstallResults } from "@/modules/library";
+import { Button, Checkbox, Dialog, Progress } from "@/components";
+import type { CslolModInfo, MigrationProgress } from "@/lib/tauri";
+import { BulkInstallResults } from "@/modules/library";
 
 import { useMigrationWizard, type WizardStep } from "../api";
 
@@ -42,7 +42,7 @@ export function MigrationWizardDialog({ open: isOpen, onClose }: MigrationWizard
                 onSelectNone={wizard.handleSelectNone}
               />
             )}
-            {wizard.step === "importing" && <BulkInstallProgress progress={wizard.progress} />}
+            {wizard.step === "importing" && <MigrationImportProgress progress={wizard.progress} />}
             {wizard.step === "results" && wizard.importResult && (
               <BulkInstallResults result={wizard.importResult} verb="imported" />
             )}
@@ -216,5 +216,33 @@ function SelectStep({
         ))}
       </div>
     </div>
+  );
+}
+
+function MigrationImportProgress({ progress }: { progress: MigrationProgress | null }) {
+  if (!progress) {
+    return (
+      <Progress.Root value={null} label="Preparing import...">
+        <Progress.Track>
+          <Progress.Indicator />
+        </Progress.Track>
+      </Progress.Root>
+    );
+  }
+
+  const phaseLabel = progress.phase === "packaging" ? "Packaging" : "Installing";
+
+  return (
+    <>
+      <Progress.Root
+        value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0}
+        label={`${phaseLabel} ${progress.current} / ${progress.total}`}
+      >
+        <Progress.Track>
+          <Progress.Indicator />
+        </Progress.Track>
+      </Progress.Root>
+      <p className="truncate text-sm text-surface-400">{progress.currentFile}</p>
+    </>
   );
 }
