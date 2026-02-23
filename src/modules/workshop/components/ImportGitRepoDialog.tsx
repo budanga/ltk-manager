@@ -9,7 +9,7 @@ const importSchema = z.object({
     .string()
     .min(1, "Repository URL is required")
     .regex(
-      /^https?:\/\/github\.com\/[^/]+\/[^/]+/,
+      /^https?:\/\/github\.com\/[^/]+\/[^/]+\/?$/,
       "Must be a GitHub repository URL (https://github.com/owner/repo)",
     ),
   branch: z.string(),

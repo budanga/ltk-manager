@@ -280,13 +280,11 @@ impl Workshop {
 
             self.emit_fantome_progress("finalizing", None, total_wads, total_wads);
 
-            // Extract README
-            extract_fantome_file(
-                &mut archive,
-                "meta/readme.md",
-                &project_dir.join("README.md"),
-            );
-            extract_fantome_file(&mut archive, "readme.md", &project_dir.join("README.md"));
+            let readme_path = project_dir.join("README.md");
+            extract_fantome_file(&mut archive, "meta/readme.md", &readme_path);
+            if !readme_path.exists() {
+                extract_fantome_file(&mut archive, "readme.md", &readme_path);
+            }
 
             // Extract thumbnail
             extract_fantome_file(
@@ -553,7 +551,9 @@ impl Workshop {
             self.emit_git_progress("error", None);
         }
 
-        let _ = fs::remove_dir_all(&temp_dir);
+        if temp_dir.exists() {
+            let _ = fs::remove_dir_all(&temp_dir);
+        }
         result
     }
 
@@ -586,6 +586,12 @@ fn parse_github_url(url: &str) -> AppResult<(String, String)> {
     if parts.len() < 2 {
         return Err(AppError::ValidationFailed(
             "URL must include owner and repository name (https://github.com/owner/repo)"
+                .to_string(),
+        ));
+    }
+    if parts.len() > 2 {
+        return Err(AppError::ValidationFailed(
+            "URL must not contain extra path segments beyond owner and repository name (https://github.com/owner/repo)"
                 .to_string(),
         ));
     }
@@ -678,6 +684,8 @@ fn extract_fantome_wad<R: Read + Seek>(
     let packed_path = format!("WAD/{}", wad_name);
     let mut has_dir_entries = false;
 
+    let wad_output_dir = base_dir.join(wad_name);
+
     // Try directory-style WAD first
     for i in 0..archive.len() {
         let file = archive.by_index(i)?;
@@ -688,11 +696,19 @@ fn extract_fantome_wad<R: Read + Seek>(
             if rel.is_empty() {
                 continue;
             }
+
+            if rel.contains("..") || std::path::Path::new(rel).is_absolute() {
+                return Err(AppError::Fantome(format!(
+                    "Zip entry contains unsafe path: {}",
+                    name
+                )));
+            }
+
             has_dir_entries = true;
             drop(file);
 
             let mut entry = archive.by_index(i)?;
-            let target_path = base_dir.join(wad_name).join(rel);
+            let target_path = wad_output_dir.join(rel);
             if let Some(parent) = target_path.parent() {
                 fs::create_dir_all(parent)?;
             }
@@ -736,7 +752,10 @@ fn extract_fantome_wad<R: Read + Seek>(
         }
     }
 
-    Ok(())
+    Err(AppError::Fantome(format!(
+        "Failed to locate or extract WAD '{}' from Fantome archive",
+        wad_name
+    )))
 }
 
 /// Try to extract a file from the archive by case-insensitive name match.

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { Button, Dialog } from "@/components";
@@ -54,6 +55,15 @@ export function ImportFantomeDialog({
       });
     },
   });
+
+  useEffect(() => {
+    if (peekResult) {
+      form.reset({
+        name: peekResult.suggestedName ?? "",
+        displayName: peekResult.name ?? "",
+      });
+    }
+  }, [form, filePath, peekResult]);
 
   function handleClose() {
     if (isImporting) return;

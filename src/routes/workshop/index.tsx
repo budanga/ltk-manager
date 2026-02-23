@@ -197,7 +197,7 @@ function WorkshopIndex() {
     if (filteredProjects.length === 0) {
       if (searchQuery) return <NoSearchResultsState />;
       return (
-        <NoProjectsState onCreate={() => setNewProjectOpen(true)} onImport={handleImportFantome} />
+        <NoProjectsState onCreate={() => setNewProjectOpen(true)} onImport={handleImportModpkg} />
       );
     }
     return (
@@ -222,7 +222,12 @@ function WorkshopIndex() {
         onImportFantome={handleImportFantome}
         onImportGitRepo={() => setGitRepoDialogOpen(true)}
         onNewProject={() => setNewProjectOpen(true)}
-        isImporting={importFromModpkg.isPending || peekFantome.isPending}
+        isImporting={
+          importFromModpkg.isPending ||
+          peekFantome.isPending ||
+          importFromFantome.isPending ||
+          Boolean(fantomeProgress)
+        }
       />
 
       <div className="flex-1 overflow-auto p-6">{renderContent()}</div>
