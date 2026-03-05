@@ -7,6 +7,7 @@ import type {
   CreateProjectArgs,
   CslolModInfo,
   FantomePeekResult,
+  HotkeyAction,
   ImportFantomeArgs,
   ImportGitRepoArgs,
   InstalledMod,
@@ -87,10 +88,8 @@ export const api = {
   // Hotkeys
   pauseHotkeys: () => invokeResult<void>("pause_hotkeys"),
   resumeHotkeys: () => invokeResult<void>("resume_hotkeys"),
-  setReloadModsHotkey: (accelerator: string | null) =>
-    invokeResult<void>("set_reload_mods_hotkey", { accelerator }),
-  setKillLeagueHotkey: (accelerator: string | null) =>
-    invokeResult<void>("set_kill_league_hotkey", { accelerator }),
+  setHotkey: (action: HotkeyAction, accelerator: string | null) =>
+    invokeResult<void>("set_hotkey", { action, accelerator }),
   hotReloadMods: () => invokeResult<void>("hot_reload_mods"),
   killLeague: () => invokeResult<void>("kill_league"),
 

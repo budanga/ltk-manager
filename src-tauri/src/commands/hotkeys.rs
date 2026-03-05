@@ -1,4 +1,5 @@
 use crate::error::{AppError, AppResult, IpcResult, MutexResultExt};
+use crate::hotkeys::{HotkeyAction, HotkeyManager};
 use crate::mods::ModLibraryState;
 use crate::patcher::PatcherState;
 use crate::state::{save_settings_to_disk, SettingsState};
@@ -6,113 +7,13 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use super::patcher::{start_patcher_inner, PatcherConfig};
-
-/// Register a global shortcut for hot-reloading mods.
-fn register_reload_hotkey(app_handle: &AppHandle, accelerator: &str) -> AppResult<()> {
-    let manager = app_handle.global_shortcut();
-    let handle = app_handle.clone();
-
-    manager
-        .on_shortcut(accelerator, move |_app, _shortcut, event| {
-            if event.state != ShortcutState::Pressed {
-                return;
-            }
-            tracing::info!("Hot reload hotkey pressed");
-            let handle_inner = handle.clone();
-            std::thread::spawn(move || {
-                if let Err(e) = execute_hot_reload(&handle_inner) {
-                    tracing::error!("Hot reload failed: {}", e);
-                    let _ = handle_inner.emit("hotkey-error", e.to_string());
-                }
-            });
-        })
-        .map_err(|e| {
-            AppError::ValidationFailed(format!(
-                "Hotkey \"{}\" could not be registered: {}",
-                accelerator, e
-            ))
-        })?;
-
-    tracing::trace!("Registered reload-mods hotkey: {}", accelerator);
-    Ok(())
-}
-
-/// Register a global shortcut for killing League.
-fn register_kill_hotkey(app_handle: &AppHandle, accelerator: &str) -> AppResult<()> {
-    let manager = app_handle.global_shortcut();
-    let handle = app_handle.clone();
-
-    manager
-        .on_shortcut(accelerator, move |_app, _shortcut, event| {
-            if event.state != ShortcutState::Pressed {
-                return;
-            }
-            tracing::info!("Kill league hotkey pressed");
-            let handle_inner = handle.clone();
-            std::thread::spawn(move || {
-                if let Err(e) = execute_kill_league(&handle_inner) {
-                    tracing::error!("Kill league failed: {}", e);
-                    let _ = handle_inner.emit("hotkey-error", e.to_string());
-                }
-            });
-        })
-        .map_err(|e| {
-            AppError::ValidationFailed(format!(
-                "Hotkey \"{}\" could not be registered: {}",
-                accelerator, e
-            ))
-        })?;
-
-    tracing::trace!("Registered kill-league hotkey: {}", accelerator);
-    Ok(())
-}
-
-/// Unregister a global shortcut if it exists.
-fn unregister_hotkey(app_handle: &AppHandle, accelerator: &str) {
-    let manager = app_handle.global_shortcut();
-    if let Err(e) = manager.unregister(accelerator) {
-        tracing::warn!("Failed to unregister hotkey {}: {}", accelerator, e);
-    } else {
-        tracing::trace!("Unregistered global hotkey: {}", accelerator);
-    }
-}
-
-/// Register persisted hotkeys from settings on app startup.
-pub fn register_startup_hotkeys(app_handle: &AppHandle, settings_state: &SettingsState) {
-    let settings = match settings_state.0.lock() {
-        Ok(s) => s.clone(),
-        Err(e) => {
-            tracing::error!("Failed to lock settings for hotkey registration: {}", e);
-            return;
-        }
-    };
-
-    if let Some(ref hotkey) = settings.reload_mods_hotkey {
-        let trimmed = hotkey.trim();
-        if !trimmed.is_empty() {
-            if let Err(e) = register_reload_hotkey(app_handle, trimmed) {
-                tracing::error!("Failed to register reload-mods hotkey on startup: {}", e);
-            }
-        }
-    }
-
-    if let Some(ref hotkey) = settings.kill_league_hotkey {
-        let trimmed = hotkey.trim();
-        if !trimmed.is_empty() {
-            if let Err(e) = register_kill_hotkey(app_handle, trimmed) {
-                tracing::error!("Failed to register kill-league hotkey on startup: {}", e);
-            }
-        }
-    }
-}
 
 // ── Hotkey action implementations (called from shortcut callbacks) ──
 
 /// Execute hot-reload: stop patcher → kill League → restart patcher.
-fn execute_hot_reload(app_handle: &AppHandle) -> AppResult<()> {
+pub(crate) fn execute_hot_reload(app_handle: &AppHandle) -> AppResult<()> {
     let patcher_state = app_handle.state::<PatcherState>();
     let settings_state = app_handle.state::<SettingsState>();
     let library_state = app_handle.state::<ModLibraryState>();
@@ -177,7 +78,7 @@ fn execute_hot_reload(app_handle: &AppHandle) -> AppResult<()> {
 }
 
 /// Execute kill-league action.
-fn execute_kill_league(app_handle: &AppHandle) -> AppResult<()> {
+pub(crate) fn execute_kill_league(app_handle: &AppHandle) -> AppResult<()> {
     let patcher_state = app_handle.state::<PatcherState>();
     let settings_state = app_handle.state::<SettingsState>();
 
@@ -204,131 +105,77 @@ fn execute_kill_league(app_handle: &AppHandle) -> AppResult<()> {
 
 /// Temporarily unregister all hotkeys (e.g. while capturing a new binding).
 #[tauri::command]
-pub fn pause_hotkeys(app_handle: AppHandle, settings: State<SettingsState>) -> IpcResult<()> {
-    pause_hotkeys_inner(&app_handle, &settings).into()
+pub fn pause_hotkeys(
+    hotkeys: State<HotkeyManager>,
+    settings: State<SettingsState>,
+) -> IpcResult<()> {
+    pause_hotkeys_inner(&hotkeys, &settings).into()
 }
 
-fn pause_hotkeys_inner(app_handle: &AppHandle, settings: &State<SettingsState>) -> AppResult<()> {
+fn pause_hotkeys_inner(
+    hotkeys: &State<HotkeyManager>,
+    settings: &State<SettingsState>,
+) -> AppResult<()> {
     let s = settings.0.lock().mutex_err()?;
-    if let Some(ref hotkey) = s.reload_mods_hotkey {
-        unregister_hotkey(app_handle, hotkey);
-    }
-    if let Some(ref hotkey) = s.kill_league_hotkey {
-        unregister_hotkey(app_handle, hotkey);
-    }
-    tracing::trace!("Paused all global hotkeys");
+    hotkeys.pause(&s);
     Ok(())
 }
 
 /// Re-register all hotkeys after capture mode ends.
 #[tauri::command]
-pub fn resume_hotkeys(app_handle: AppHandle, settings: State<SettingsState>) -> IpcResult<()> {
-    resume_hotkeys_inner(&app_handle, &settings).into()
+pub fn resume_hotkeys(
+    hotkeys: State<HotkeyManager>,
+    settings: State<SettingsState>,
+) -> IpcResult<()> {
+    resume_hotkeys_inner(&hotkeys, &settings).into()
 }
 
-fn resume_hotkeys_inner(app_handle: &AppHandle, settings: &State<SettingsState>) -> AppResult<()> {
+fn resume_hotkeys_inner(
+    hotkeys: &State<HotkeyManager>,
+    settings: &State<SettingsState>,
+) -> AppResult<()> {
     let s = settings.0.lock().mutex_err()?;
-    if let Some(ref hotkey) = s.reload_mods_hotkey {
-        if let Err(e) = register_reload_hotkey(app_handle, hotkey) {
-            tracing::error!("Failed to resume reload-mods hotkey: {}", e);
-        }
-    }
-    if let Some(ref hotkey) = s.kill_league_hotkey {
-        if let Err(e) = register_kill_hotkey(app_handle, hotkey) {
-            tracing::error!("Failed to resume kill-league hotkey: {}", e);
-        }
-    }
-    tracing::trace!("Resumed all global hotkeys");
+    hotkeys.resume(&s);
     Ok(())
 }
 
-/// Set (or clear) the global hotkey for reloading mods.
+/// Set (or clear) a global hotkey for the given action.
 #[tauri::command]
-pub fn set_reload_mods_hotkey(
+pub fn set_hotkey(
+    action: HotkeyAction,
     accelerator: Option<String>,
     app_handle: AppHandle,
+    hotkeys: State<HotkeyManager>,
     settings: State<SettingsState>,
 ) -> IpcResult<()> {
-    set_reload_mods_hotkey_inner(accelerator, &app_handle, &settings).into()
+    set_hotkey_inner(action, accelerator, &app_handle, &hotkeys, &settings).into()
 }
 
-fn set_reload_mods_hotkey_inner(
+fn set_hotkey_inner(
+    action: HotkeyAction,
     accelerator: Option<String>,
     app_handle: &AppHandle,
+    hotkeys: &State<HotkeyManager>,
     settings: &State<SettingsState>,
 ) -> AppResult<()> {
     let mut s = settings.0.lock().mutex_err()?;
-    let old_hotkey = s.reload_mods_hotkey.clone();
+    let old_hotkey = action.get_accelerator(&s).map(str::to_string);
 
     match accelerator {
         Some(ref accel) if !accel.trim().is_empty() => {
             let trimmed = accel.trim().to_string();
-            // Reject if the same hotkey is already used by the other action
-            if s.kill_league_hotkey.as_deref() == Some(trimmed.as_str()) {
-                return Err(AppError::ValidationFailed(
-                    "This hotkey is already used for Kill League".to_string(),
-                ));
-            }
-            // Register new hotkey first — if this fails, the old one stays active
-            register_reload_hotkey(app_handle, &trimmed)?;
-            // Only unregister old after successful registration
+            action.check_no_conflict(&s, &trimmed)?;
+            hotkeys.register(action, &trimmed)?;
             if let Some(ref old) = old_hotkey {
-                unregister_hotkey(app_handle, old);
+                hotkeys.unregister(old);
             }
-            s.reload_mods_hotkey = Some(trimmed);
+            action.set_accelerator(&mut s, Some(trimmed));
         }
         _ => {
             if let Some(ref old) = old_hotkey {
-                unregister_hotkey(app_handle, old);
+                hotkeys.unregister(old);
             }
-            s.reload_mods_hotkey = None;
-        }
-    }
-
-    save_settings_to_disk(app_handle, &s)?;
-    Ok(())
-}
-
-/// Set (or clear) the global hotkey for killing League.
-#[tauri::command]
-pub fn set_kill_league_hotkey(
-    accelerator: Option<String>,
-    app_handle: AppHandle,
-    settings: State<SettingsState>,
-) -> IpcResult<()> {
-    set_kill_league_hotkey_inner(accelerator, &app_handle, &settings).into()
-}
-
-fn set_kill_league_hotkey_inner(
-    accelerator: Option<String>,
-    app_handle: &AppHandle,
-    settings: &State<SettingsState>,
-) -> AppResult<()> {
-    let mut s = settings.0.lock().mutex_err()?;
-    let old_hotkey = s.kill_league_hotkey.clone();
-
-    match accelerator {
-        Some(ref accel) if !accel.trim().is_empty() => {
-            let trimmed = accel.trim().to_string();
-            // Reject if the same hotkey is already used by the other action
-            if s.reload_mods_hotkey.as_deref() == Some(trimmed.as_str()) {
-                return Err(AppError::ValidationFailed(
-                    "This hotkey is already used for Hot Reload Mods".to_string(),
-                ));
-            }
-            // Register new hotkey first — if this fails, the old one stays active
-            register_kill_hotkey(app_handle, &trimmed)?;
-            // Only unregister old after successful registration
-            if let Some(ref old) = old_hotkey {
-                unregister_hotkey(app_handle, old);
-            }
-            s.kill_league_hotkey = Some(trimmed);
-        }
-        _ => {
-            if let Some(ref old) = old_hotkey {
-                unregister_hotkey(app_handle, old);
-            }
-            s.kill_league_hotkey = None;
+            action.set_accelerator(&mut s, None);
         }
     }
 

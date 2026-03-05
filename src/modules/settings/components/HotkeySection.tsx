@@ -23,7 +23,7 @@ export function HotkeySection({ settings, onSave }: HotkeySectionProps) {
           description="Stop patcher, kill League, rebuild overlay, and restart the patcher with fresh mod files."
           value={settings.reloadModsHotkey ?? null}
           onSet={async (accelerator) => {
-            const result = await api.setReloadModsHotkey(accelerator);
+            const result = await api.setHotkey("reloadMods", accelerator);
             if (isErr(result)) throw new Error(result.error.message);
             onSave({ ...settings, reloadModsHotkey: accelerator });
           }}
@@ -34,7 +34,7 @@ export function HotkeySection({ settings, onSave }: HotkeySectionProps) {
           description="Force-close the League of Legends process."
           value={settings.killLeagueHotkey ?? null}
           onSet={async (accelerator) => {
-            const result = await api.setKillLeagueHotkey(accelerator);
+            const result = await api.setHotkey("killLeague", accelerator);
             if (isErr(result)) throw new Error(result.error.message);
             onSave({ ...settings, killLeagueHotkey: accelerator });
           }}
