@@ -111,6 +111,17 @@ jobs:
       - name: Install trusted-signing-cli
         run: cargo install trusted-signing-cli
 
+      - name: Locate signtool.exe
+        id: signtool
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" |
+            Where-Object { $_.FullName -like "*\x64\*" } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $signtool) { throw "signtool.exe not found" }
+          echo "SIGNTOOL_PATH=$($signtool.FullName)" >> $env:GITHUB_OUTPUT
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
@@ -137,6 +148,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          SIGNTOOL_PATH: ${{ steps.signtool.outputs.SIGNTOOL_PATH }}
         with:
           tagName: ${{ steps.version.outputs.tag }}
           releaseName: "LTK Manager v${{ steps.version.outputs.version }}"
