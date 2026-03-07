@@ -267,28 +267,20 @@ fn handle_single_deep_link(app_handle: &tauri::AppHandle, raw_url: &str) {
 
             let settings_state: tauri::State<'_, SettingsState> = app_handle.state();
             if let Ok(settings) = settings_state.0.lock() {
-                if !settings.trusted_domains.is_empty() {
-                    if let Ok(parsed) = url::Url::parse(&request.url) {
-                        let host = parsed.host_str().unwrap_or("");
-                        let is_trusted = settings
-                            .trusted_domains
-                            .iter()
-                            .any(|d| host == d.as_str() || host.ends_with(&format!(".{d}")));
-                        if !is_trusted {
-                            tracing::warn!(
-                                "Deep-link blocked: domain '{}' not in trusted list",
-                                host
-                            );
-                            let _ = app_handle.emit(
-                                "deep-link-blocked",
-                                serde_json::json!({
-                                    "domain": host,
-                                    "url": request.url,
-                                }),
-                            );
-                            return;
-                        }
-                    }
+                if !deep_link::is_domain_trusted(&request.url, &settings.trusted_domains) {
+                    let domain = url::Url::parse(&request.url)
+                        .ok()
+                        .and_then(|u| u.host_str().map(String::from))
+                        .unwrap_or_default();
+                    tracing::warn!("Deep-link blocked: domain '{}' not in trusted list", domain);
+                    let _ = app_handle.emit(
+                        "deep-link-blocked",
+                        serde_json::json!({
+                            "domain": domain,
+                            "url": request.url,
+                        }),
+                    );
+                    return;
                 }
             }
 

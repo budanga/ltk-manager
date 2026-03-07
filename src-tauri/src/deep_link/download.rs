@@ -146,7 +146,7 @@ fn infer_extension_from_metadata(
     None
 }
 
-fn extract_extension_from_content_disposition(header: &str) -> Option<&'static str> {
+pub(crate) fn extract_extension_from_content_disposition(header: &str) -> Option<&'static str> {
     let lower = header.to_ascii_lowercase();
     for part in lower.split(';') {
         let part = part.trim();
@@ -167,7 +167,7 @@ fn extract_extension_from_content_disposition(header: &str) -> Option<&'static s
 }
 
 /// Sniff the file format from the first 4 bytes of a file.
-fn sniff_extension_from_file(path: &std::path::Path) -> Option<String> {
+pub(crate) fn sniff_extension_from_file(path: &std::path::Path) -> Option<String> {
     let mut file = std::fs::File::open(path).ok()?;
     let mut magic = [0u8; 4];
     file.read_exact(&mut magic).ok()?;
