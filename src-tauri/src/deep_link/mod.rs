@@ -504,7 +504,7 @@ mod tests {
     fn sniff_zip_magic_returns_fantome() {
         let dir = std::env::temp_dir();
         let path = dir.join("test_sniff_zip.tmp");
-        std::fs::write(&path, &[0x50, 0x4B, 0x03, 0x04, 0x00, 0x00]).unwrap();
+        std::fs::write(&path, [0x50, 0x4B, 0x03, 0x04, 0x00, 0x00]).unwrap();
         assert_eq!(sniff_extension_from_file(&path), Some("fantome".into()));
         let _ = std::fs::remove_file(&path);
     }
@@ -531,7 +531,7 @@ mod tests {
     fn sniff_short_file_returns_none() {
         let dir = std::env::temp_dir();
         let path = dir.join("test_sniff_short.tmp");
-        std::fs::write(&path, &[0x50, 0x4B]).unwrap();
+        std::fs::write(&path, [0x50, 0x4B]).unwrap();
         assert_eq!(sniff_extension_from_file(&path), None);
         let _ = std::fs::remove_file(&path);
     }
