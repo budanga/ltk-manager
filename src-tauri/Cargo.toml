@@ -53,6 +53,8 @@ zip = "2.2.0"
 image = "0.25.2"
 webp = "0.3"
 slug = "0.1"
+notify = { version = "7", default-features = false }
+notify-debouncer-mini = "0.5"
 
 reqwest = { version = "0.12", features = ["blocking"] }
 url = "2"
@@ -66,6 +68,7 @@ tracing-appender = "0.2"
 [dev-dependencies]
 tempfile = "3"
 assert_matches = "1.5"
+filetime = "0.2"
 
 [features]
 default = ["custom-protocol"]
