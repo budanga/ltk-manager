@@ -117,7 +117,7 @@ fn main() {
             // Reconcile library index (clean up orphaned mod entries from disk changes)
             {
                 let settings = settings_state.0.lock().unwrap();
-                match mod_library.0.reconcile_on_startup(&settings) {
+                match mod_library.0.reconcile_index(&settings) {
                     Ok(true) => tracing::info!("Library index reconciled on startup"),
                     Ok(false) => {}
                     Err(e) => tracing::warn!("Failed to reconcile library on startup: {}", e),

@@ -12,7 +12,7 @@ use crate::state::SettingsState;
 use super::{ModLibraryState, WATCHER_SUPPRESS_SECS};
 
 /// Start a background thread that watches the `archives` and `mods` directories
-/// for changes and reconciles the library index when files are added or removed.
+/// for changes and reconciles the library index when files are added or removed externally.
 ///
 /// Emits a `library-changed` event to the frontend so it can invalidate queries.
 pub fn start_library_watcher(app_handle: &AppHandle) {
@@ -95,7 +95,7 @@ fn run_watcher(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>>
                     DebouncedEventKind::Any | DebouncedEventKind::AnyContinuous => {
                         e.path.extension().is_some_and(|ext| ext == "json")
                     }
-                    _ => true,
+                    _ => false,
                 });
                 if dominated_by_internal_event {
                     continue;
@@ -129,7 +129,7 @@ fn handle_change(app_handle: &AppHandle) {
         }
     };
 
-    match mod_library_state.0.reconcile_on_startup(&settings) {
+    match mod_library_state.0.reconcile_index(&settings) {
         Ok(true) => {
             tracing::info!("Watcher: library index reconciled after file change");
             let _ = app_handle.emit("library-changed", ());

@@ -350,7 +350,7 @@ impl ModLibrary {
 ///
 /// Copies the archive, extracts metadata, and adds the mod to the index.
 /// Does NOT load/save the index or invalidate the overlay.
-fn install_single_mod_to_index(
+pub(super) fn install_single_mod_to_index(
     storage_dir: &Path,
     index: &mut LibraryIndex,
     file_path: &str,
@@ -367,15 +367,11 @@ fn install_single_mod_to_index(
 
     let id = Uuid::new_v4().to_string();
 
-    let format = match file_path
+    let format = file_path
         .extension()
-        .and_then(|s| s.to_str())
-        .map(|s| s.to_ascii_lowercase())
-        .as_deref()
-    {
-        Some("fantome") => ModArchiveFormat::Fantome,
-        _ => ModArchiveFormat::Modpkg,
-    };
+        .and_then(|ext| ext.to_str())
+        .and_then(ModArchiveFormat::from_extension)
+        .unwrap_or(ModArchiveFormat::Modpkg);
 
     let installed_at = Utc::now();
 
@@ -474,7 +470,7 @@ fn load_mod_project(mod_dir: &Path) -> AppResult<ModProject> {
     serde_json::from_str(&contents).map_err(AppError::from)
 }
 
-fn extract_fantome_metadata(file_path: &Path, metadata_dir: &Path) -> AppResult<()> {
+pub(super) fn extract_fantome_metadata(file_path: &Path, metadata_dir: &Path) -> AppResult<()> {
     use std::io::Read;
     use zip::ZipArchive;
 
@@ -584,7 +580,7 @@ fn extract_fantome_metadata(file_path: &Path, metadata_dir: &Path) -> AppResult<
     Ok(())
 }
 
-fn extract_modpkg_metadata(file_path: &Path, metadata_dir: &Path) -> AppResult<()> {
+pub(super) fn extract_modpkg_metadata(file_path: &Path, metadata_dir: &Path) -> AppResult<()> {
     let file = std::fs::File::open(file_path)?;
     let mut modpkg =
         Modpkg::mount_from_reader(file).map_err(|e| AppError::Modpkg(e.to_string()))?;

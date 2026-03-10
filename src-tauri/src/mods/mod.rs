@@ -76,9 +76,9 @@ impl ModLibrary {
             .ok_or_else(|| AppError::Other("Failed to resolve mod storage directory".to_string()))
     }
 
-    /// Run reconciliation on startup to clean up orphaned entries.
+    /// Run reconciliation to clean up orphaned entries.
     /// Returns `true` if the index was modified.
-    pub fn reconcile_on_startup(&self, settings: &Settings) -> AppResult<bool> {
+    pub fn reconcile_index(&self, settings: &Settings) -> AppResult<bool> {
         let _lock = self.index_lock.lock().mutex_err()?;
         let storage_dir = self.storage_dir(settings)?;
         let (index, reconciled) = load_library_index(&storage_dir)?;
@@ -319,6 +319,15 @@ impl ModArchiveFormat {
             ModArchiveFormat::Fantome => "fantome",
         }
     }
+
+    /// Parse from a file extension string (case-insensitive).
+    pub(super) fn from_extension(ext: &str) -> Option<Self> {
+        match ext.to_ascii_lowercase().as_str() {
+            "modpkg" => Some(Self::Modpkg),
+            "fantome" => Some(Self::Fantome),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -387,13 +396,26 @@ fn invalidate_overlay_for_profile(storage_dir: &Path, index: &LibraryIndex) -> A
     Ok(())
 }
 
-/// Remove mod entries whose metadata or archive files no longer exist on disk,
-/// clean up stale references in all profiles, and ensure all profiles list all
-/// valid mods in their `mod_order`. Returns `true` if changes were made.
+/// Reconcile the library index against the filesystem.
+///
+/// 1. Remove orphaned mod entries (missing files on disk)
+/// 2. Sync profile mod_order lists with the valid mod set
+/// 3. Discover and register unrecognised archives
+/// 4. Re-extract metadata when an archive is newer than its cached config
+///
+/// Returns `true` if changes were made.
 fn reconcile_library_index(storage_dir: &Path, index: &mut LibraryIndex) -> bool {
     let mut changed = false;
+    changed |= remove_orphaned_entries(storage_dir, index);
+    changed |= sync_profile_mod_orders(index);
+    changed |= discover_new_archives(storage_dir, index);
+    changed |= refresh_stale_metadata(storage_dir, index);
+    changed
+}
 
-    // 1. Remove orphaned mod entries (files missing from disk)
+/// Remove mod entries whose metadata or archive files no longer exist on disk
+/// and clean up stale references in all profiles.
+fn remove_orphaned_entries(storage_dir: &Path, index: &mut LibraryIndex) -> bool {
     let orphaned_ids: Vec<String> = index
         .mods
         .iter()
@@ -408,43 +430,48 @@ fn reconcile_library_index(storage_dir: &Path, index: &mut LibraryIndex) -> bool
         .map(|entry| entry.id.clone())
         .collect();
 
-    if !orphaned_ids.is_empty() {
-        let orphaned_set: std::collections::HashSet<&str> =
-            orphaned_ids.iter().map(|s| s.as_str()).collect();
-
-        for id in &orphaned_ids {
-            tracing::warn!(
-                "Removing orphaned mod entry {} (files missing from disk)",
-                id
-            );
-        }
-
-        index.mods.retain(|m| !orphaned_set.contains(m.id.as_str()));
-
-        for profile in &mut index.profiles {
-            profile
-                .mod_order
-                .retain(|id| !orphaned_set.contains(id.as_str()));
-            profile
-                .enabled_mods
-                .retain(|id| !orphaned_set.contains(id.as_str()));
-        }
-
-        tracing::info!(
-            "Reconciled library index: removed {} orphaned mod entries",
-            orphaned_ids.len()
-        );
-        changed = true;
+    if orphaned_ids.is_empty() {
+        return false;
     }
 
-    // 2. Ensure all profiles contain all valid mods in their mod_order.
-    // Mods installed while a different profile was active won't appear in
-    // that profile's mod_order, causing reorder validation mismatches.
+    let orphaned_set: std::collections::HashSet<&str> =
+        orphaned_ids.iter().map(|s| s.as_str()).collect();
+
+    for id in &orphaned_ids {
+        tracing::warn!(
+            "Removing orphaned mod entry {} (files missing from disk)",
+            id
+        );
+    }
+
+    index.mods.retain(|m| !orphaned_set.contains(m.id.as_str()));
+
+    for profile in &mut index.profiles {
+        profile
+            .mod_order
+            .retain(|id| !orphaned_set.contains(id.as_str()));
+        profile
+            .enabled_mods
+            .retain(|id| !orphaned_set.contains(id.as_str()));
+    }
+
+    tracing::info!(
+        "Reconciled library index: removed {} orphaned mod entries",
+        orphaned_ids.len()
+    );
+    true
+}
+
+/// Ensure all profiles contain all valid mods in their `mod_order`.
+///
+/// Mods installed while a different profile was active won't appear in
+/// that profile's `mod_order`, causing reorder validation mismatches.
+fn sync_profile_mod_orders(index: &mut LibraryIndex) -> bool {
+    let mut changed = false;
     let valid_ids: std::collections::HashSet<&str> =
         index.mods.iter().map(|m| m.id.as_str()).collect();
 
     for profile in &mut index.profiles {
-        // Remove any profile references to mods not in the index
         let before = profile.mod_order.len() + profile.enabled_mods.len();
         profile
             .mod_order
@@ -456,7 +483,6 @@ fn reconcile_library_index(storage_dir: &Path, index: &mut LibraryIndex) -> bool
             changed = true;
         }
 
-        // Add missing mods to the end of mod_order
         let order_set: std::collections::HashSet<&str> =
             profile.mod_order.iter().map(|s| s.as_str()).collect();
         let missing: Vec<String> = index
@@ -473,6 +499,104 @@ fn reconcile_library_index(storage_dir: &Path, index: &mut LibraryIndex) -> bool
             );
             profile.mod_order.push(id);
             changed = true;
+        }
+    }
+
+    changed
+}
+
+/// Scan `archives/` for mod files not registered in the index and install them.
+fn discover_new_archives(storage_dir: &Path, index: &mut LibraryIndex) -> bool {
+    let archives_dir = storage_dir.join("archives");
+    if !archives_dir.is_dir() {
+        return false;
+    }
+
+    let known_ids: std::collections::HashSet<&str> =
+        index.mods.iter().map(|m| m.id.as_str()).collect();
+
+    let unknown_archives: Vec<PathBuf> = fs::read_dir(&archives_dir)
+        .into_iter()
+        .flatten()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| {
+            p.extension()
+                .and_then(|ext| ext.to_str())
+                .is_some_and(|ext| ModArchiveFormat::from_extension(ext).is_some())
+        })
+        .filter(|p| {
+            p.file_stem()
+                .and_then(|s| s.to_str())
+                .is_none_or(|stem| !known_ids.contains(stem))
+        })
+        .collect();
+
+    let mut changed = false;
+    for path in unknown_archives {
+        let path_str = path.display().to_string();
+        match library::install_single_mod_to_index(storage_dir, index, &path_str) {
+            Ok((_entry, installed)) => {
+                tracing::info!(
+                    "Discovered and registered archive: {} as {}",
+                    path.display(),
+                    installed.id
+                );
+                if let Err(e) = fs::remove_file(&path) {
+                    tracing::warn!(
+                        "Failed to delete original archive {}: {}",
+                        path.display(),
+                        e
+                    );
+                }
+                changed = true;
+            }
+            Err(e) => {
+                tracing::warn!("Skipping invalid archive {}: {}", path.display(), e);
+            }
+        }
+    }
+
+    changed
+}
+
+/// Re-extract metadata for mods whose archive is newer than the cached `mod.config.json`.
+fn refresh_stale_metadata(storage_dir: &Path, index: &LibraryIndex) -> bool {
+    let mut changed = false;
+
+    for entry in &index.mods {
+        let archive_path = entry.archive_path(storage_dir);
+        let config_path = entry.metadata_dir(storage_dir).join("mod.config.json");
+
+        let archive_mtime = match fs::metadata(&archive_path).and_then(|m| m.modified()) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        let config_mtime = match fs::metadata(&config_path).and_then(|m| m.modified()) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+
+        if archive_mtime > config_mtime {
+            let metadata_dir = entry.metadata_dir(storage_dir);
+            let result = match entry.format {
+                ModArchiveFormat::Fantome => {
+                    library::extract_fantome_metadata(&archive_path, &metadata_dir)
+                }
+                ModArchiveFormat::Modpkg => {
+                    library::extract_modpkg_metadata(&archive_path, &metadata_dir)
+                }
+            };
+
+            match result {
+                Ok(()) => {
+                    tracing::info!("Re-extracted stale metadata for mod {}", entry.id);
+                    changed = true;
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to re-extract metadata for mod {}: {}", entry.id, e);
+                }
+            }
         }
     }
 
@@ -1036,6 +1160,159 @@ mod tests {
         assert!(loaded.mods.is_empty());
         assert!(loaded.profiles[0].mod_order.is_empty());
         assert!(loaded.profiles[0].enabled_mods.is_empty());
+    }
+
+    // ── Archive discovery ──
+
+    fn make_fantome_zip(path: &Path) {
+        use std::io::Write;
+        let info = ltk_fantome::FantomeInfo {
+            name: "Test Mod".to_string(),
+            author: "Author".to_string(),
+            version: "1.0.0".to_string(),
+            description: "Description".to_string(),
+            tags: Vec::new(),
+            champions: Vec::new(),
+            maps: Vec::new(),
+            layers: std::collections::HashMap::new(),
+        };
+        let file = std::fs::File::create(path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        zip.start_file("META/info.json", options).unwrap();
+        zip.write_all(serde_json::to_string_pretty(&info).unwrap().as_bytes())
+            .unwrap();
+        zip.finish().unwrap();
+    }
+
+    #[test]
+    fn reconcile_discovers_unregistered_archive() {
+        let dir = tempfile::tempdir().unwrap();
+        let archives_dir = dir.path().join("archives");
+        fs::create_dir_all(&archives_dir).unwrap();
+
+        make_fantome_zip(&archives_dir.join("cool-skin.fantome"));
+
+        let mut index = LibraryIndex {
+            mods: Vec::new(),
+            profiles: vec![make_test_profile("p1", "Default", vec![], vec![])],
+            active_profile_id: "p1".to_string(),
+        };
+
+        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert_eq!(index.mods.len(), 1);
+        assert_eq!(index.mods[0].format, ModArchiveFormat::Fantome);
+        assert_eq!(index.profiles[0].mod_order.len(), 1);
+        assert_eq!(index.profiles[0].enabled_mods.len(), 1);
+        // Original file should be deleted
+        assert!(!archives_dir.join("cool-skin.fantome").exists());
+        // UUID-named file should exist
+        let uuid_archive = index.mods[0].archive_path(dir.path());
+        assert!(uuid_archive.exists());
+    }
+
+    #[test]
+    fn reconcile_skips_known_archive_stems() {
+        let dir = tempfile::tempdir().unwrap();
+        place_mod_files(dir.path(), "mod-a", ModArchiveFormat::Fantome);
+
+        let mut index = LibraryIndex {
+            mods: vec![make_test_entry("mod-a", ModArchiveFormat::Fantome)],
+            profiles: vec![make_test_profile(
+                "p1",
+                "Default",
+                vec!["mod-a"],
+                vec!["mod-a"],
+            )],
+            active_profile_id: "p1".to_string(),
+        };
+
+        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert_eq!(index.mods.len(), 1);
+    }
+
+    #[test]
+    fn reconcile_skips_corrupt_archive() {
+        let dir = tempfile::tempdir().unwrap();
+        let archives_dir = dir.path().join("archives");
+        fs::create_dir_all(&archives_dir).unwrap();
+
+        // Write invalid data with .fantome extension
+        fs::write(archives_dir.join("corrupt.fantome"), b"not a zip").unwrap();
+
+        let mut index = LibraryIndex {
+            mods: Vec::new(),
+            profiles: vec![make_test_profile("p1", "Default", vec![], vec![])],
+            active_profile_id: "p1".to_string(),
+        };
+
+        // Should not crash, the corrupt file is skipped
+        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(index.mods.is_empty());
+        // Corrupt file should still exist (not deleted)
+        assert!(archives_dir.join("corrupt.fantome").exists());
+    }
+
+    #[test]
+    fn reconcile_reextracts_stale_metadata() {
+        let dir = tempfile::tempdir().unwrap();
+        place_mod_files(dir.path(), "mod-a", ModArchiveFormat::Fantome);
+
+        // Replace the fake archive with a real fantome zip
+        let archive_path = dir.path().join("archives").join("mod-a.fantome");
+        make_fantome_zip(&archive_path);
+
+        // Backdate the config so the archive appears newer
+        let config_path = dir
+            .path()
+            .join("mods")
+            .join("mod-a")
+            .join("mod.config.json");
+        let past = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+        filetime::set_file_mtime(&config_path, filetime::FileTime::from_system_time(past)).unwrap();
+
+        let mut index = LibraryIndex {
+            mods: vec![make_test_entry("mod-a", ModArchiveFormat::Fantome)],
+            profiles: vec![make_test_profile(
+                "p1",
+                "Default",
+                vec!["mod-a"],
+                vec!["mod-a"],
+            )],
+            active_profile_id: "p1".to_string(),
+        };
+
+        assert!(reconcile_library_index(dir.path(), &mut index));
+
+        // Metadata should have been re-extracted with real data
+        let config_content = fs::read_to_string(&config_path).unwrap();
+        let project: ltk_mod_project::ModProject = serde_json::from_str(&config_content).unwrap();
+        assert_eq!(project.display_name, "Test Mod");
+    }
+
+    #[test]
+    fn reconcile_skips_fresh_metadata() {
+        let dir = tempfile::tempdir().unwrap();
+        place_mod_files(dir.path(), "mod-a", ModArchiveFormat::Fantome);
+
+        // Backdate the archive so config is newer
+        let archive_path = dir.path().join("archives").join("mod-a.fantome");
+        let past = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+        filetime::set_file_mtime(&archive_path, filetime::FileTime::from_system_time(past))
+            .unwrap();
+
+        let mut index = LibraryIndex {
+            mods: vec![make_test_entry("mod-a", ModArchiveFormat::Fantome)],
+            profiles: vec![make_test_profile(
+                "p1",
+                "Default",
+                vec!["mod-a"],
+                vec!["mod-a"],
+            )],
+            active_profile_id: "p1".to_string(),
+        };
+
+        assert!(!reconcile_library_index(dir.path(), &mut index));
     }
 
     #[test]
