@@ -1,7 +1,7 @@
 import {
   closestCenter,
   DndContext,
-  type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
   KeyboardSensor,
@@ -16,11 +16,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { InstalledMod } from "@/lib/tauri";
 
 import { ModCard } from "./ModCard";
+import { SortableModCard } from "./SortableModCard";
 
 interface SortableModListProps {
   mods: InstalledMod[];
@@ -30,7 +31,8 @@ interface SortableModListProps {
   onToggle: (modId: string, enabled: boolean) => void;
   onUninstall: (modId: string) => void;
   onViewDetails?: (mod: InstalledMod) => void;
-  children: React.ReactNode;
+  isPatcherActive?: boolean;
+  className?: string;
 }
 
 export function SortableModList({
@@ -41,39 +43,83 @@ export function SortableModList({
   onToggle,
   onUninstall,
   onViewDetails,
-  children,
+  isPatcherActive,
+  className,
 }: SortableModListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [localOrder, setLocalOrder] = useState<string[]>(() => mods.map((m) => m.id));
+  const lastPropsOrder = useRef<string[]>(localOrder);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const items = mods.map((m) => m.id);
-  const activeMod = activeId ? mods.find((m) => m.id === activeId) : null;
+  const propsOrder = useMemo(() => mods.map((m) => m.id), [mods]);
+
+  useEffect(() => {
+    if (propsOrder.join() !== lastPropsOrder.current.join()) {
+      lastPropsOrder.current = propsOrder;
+      if (!activeId) {
+        setLocalOrder(propsOrder);
+      }
+    }
+  }, [propsOrder, activeId]);
+
+  const modMap = useMemo(() => new Map(mods.map((m) => [m.id, m])), [mods]);
+
+  const orderedMods = useMemo(
+    () => localOrder.map((id) => modMap.get(id)).filter(Boolean) as InstalledMod[],
+    [localOrder, modMap],
+  );
+
+  const activeMod = activeId ? (modMap.get(activeId) ?? null) : null;
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveId(null);
+  function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = items.indexOf(active.id as string);
-    const newIndex = items.indexOf(over.id as string);
-    const newOrder = arrayMove(items, oldIndex, newIndex);
-    onReorder(newOrder);
+    setLocalOrder((prev) => {
+      const oldIndex = prev.indexOf(active.id as string);
+      const newIndex = prev.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }
+
+  function handleDragEnd() {
+    setActiveId(null);
+    const changed = localOrder.join() !== propsOrder.join();
+    if (changed) {
+      onReorder(localOrder);
+    }
   }
 
   function handleDragCancel() {
     setActiveId(null);
+    setLocalOrder(propsOrder);
   }
 
   if (disabled) {
-    return <>{children}</>;
+    return (
+      <div className={className}>
+        {mods.map((mod) => (
+          <ModCard
+            key={mod.id}
+            mod={mod}
+            viewMode={viewMode}
+            onToggle={onToggle}
+            onUninstall={onUninstall}
+            onViewDetails={onViewDetails}
+            disabled={isPatcherActive}
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -81,18 +127,31 @@ export function SortableModList({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <SortableContext
-        items={items}
+        items={localOrder}
         strategy={viewMode === "list" ? verticalListSortingStrategy : rectSortingStrategy}
       >
-        {children}
+        <div className={className}>
+          {orderedMods.map((mod) => (
+            <SortableModCard
+              key={mod.id}
+              mod={mod}
+              viewMode={viewMode}
+              onToggle={onToggle}
+              onUninstall={onUninstall}
+              onViewDetails={onViewDetails}
+              disabled={isPatcherActive}
+            />
+          ))}
+        </div>
       </SortableContext>
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeMod ? (
-          <div className="opacity-90">
+          <div className="scale-[1.02] cursor-grabbing rounded-xl shadow-lg ring-2 ring-accent-500/30">
             <ModCard
               mod={activeMod}
               viewMode={viewMode}

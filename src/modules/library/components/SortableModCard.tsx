@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import type { CSSProperties } from "react";
-import { LuGripVertical } from "react-icons/lu";
 
 import type { InstalledMod } from "@/lib/tauri";
 
@@ -29,45 +29,54 @@ export function SortableModCard({
   });
 
   const style: CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : undefined,
+    transform: CSS.Translate.toString(transform),
+    transition: transition ?? "transform 250ms cubic-bezier(0.25, 1, 0.5, 1)",
+    willChange: transform ? "transform" : undefined,
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="group/sortable relative">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group/sortable relative rounded-xl ${isDragging ? "z-0" : ""}`}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 rounded-xl border-2 border-dashed border-accent-500/40 bg-accent-500/5" />
+      )}
       {/* Drag handle */}
       {!disabled && viewMode === "list" && (
         <div
-          className="absolute top-1/2 -left-7 z-10 flex -translate-y-1/2 cursor-grab items-center opacity-0 transition-opacity group-hover/sortable:opacity-100"
+          className={`absolute top-1/2 -left-7 z-10 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover/sortable:opacity-100 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
           data-no-toggle
           onClick={(e) => e.stopPropagation()}
           {...attributes}
           {...listeners}
         >
-          <LuGripVertical className="h-5 w-5 text-surface-500" />
+          <GripVertical className="h-5 w-5 text-surface-500" />
         </div>
       )}
       {!disabled && viewMode !== "list" && (
         <div
-          className="absolute top-2 left-2 z-10 flex cursor-grab items-center rounded-md bg-surface-900/80 p-1 opacity-0 backdrop-blur-sm transition-opacity group-hover/sortable:opacity-100"
+          className={`absolute top-2 left-2 z-10 flex items-center rounded-md bg-surface-900/80 p-1 opacity-0 backdrop-blur-sm transition-opacity group-hover/sortable:opacity-100 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
           data-no-toggle
           onClick={(e) => e.stopPropagation()}
           {...attributes}
           {...listeners}
         >
-          <LuGripVertical className="h-4 w-4 text-surface-400" />
+          <GripVertical className="h-4 w-4 text-surface-400" />
         </div>
       )}
 
-      <ModCard
-        mod={mod}
-        viewMode={viewMode}
-        onToggle={onToggle}
-        onUninstall={onUninstall}
-        onViewDetails={onViewDetails}
-        disabled={disabled}
-      />
+      <div className={isDragging ? "invisible" : undefined}>
+        <ModCard
+          mod={mod}
+          viewMode={viewMode}
+          onToggle={onToggle}
+          onUninstall={onUninstall}
+          onViewDetails={onViewDetails}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 }

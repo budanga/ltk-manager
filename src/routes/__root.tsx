@@ -1,13 +1,16 @@
 import { createRootRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
+import { usePageTransition, useReducedMotion } from "@/hooks";
 import { ProtocolInstallDialog, useDeepLinkListener } from "@/modules/deep-link";
 import { useLibraryWatcher } from "@/modules/library";
 import { StatusBar } from "@/modules/patcher";
 import { useAppInfo, useCheckSetupRequired } from "@/modules/settings";
 import { DevConsole, TitleBar, useDevLogStream } from "@/modules/shell";
 import { UpdateNotification, useUpdateCheck } from "@/modules/updater";
+import { useDisplayStore } from "@/stores";
 
 function RootLayout() {
   const { data: appInfo } = useAppInfo();
@@ -17,9 +20,21 @@ function RootLayout() {
 
   const { data: setupRequired, isLoading: isCheckingSetup } = useCheckSetupRequired();
 
+  const density = useDisplayStore((s) => s.density);
+  const isReducedMotion = useReducedMotion();
+  const pageTransition = usePageTransition();
+
   useDevLogStream();
   useDeepLinkListener();
   useLibraryWatcher();
+
+  useEffect(() => {
+    document.documentElement.dataset.density = density;
+  }, [density]);
+
+  useEffect(() => {
+    document.documentElement.dataset.reduceMotion = String(isReducedMotion);
+  }, [isReducedMotion]);
 
   useHotkeys("ctrl+1", () => navigate({ to: "/" }), { preventDefault: true });
   useHotkeys("ctrl+2", () => navigate({ to: "/workshop" }), { preventDefault: true });
@@ -43,8 +58,8 @@ function RootLayout() {
   // Show loading state while checking setup
   if (isCheckingSetup) {
     return (
-      <div className="via-night-600 flex h-screen items-center justify-center bg-linear-to-br from-surface-900 to-surface-900">
-        <div className="text-surface-400">Loading...</div>
+      <div className="flex h-screen items-center justify-center bg-linear-to-br from-surface-900 via-surface-800 to-surface-900">
+        <Loader2 className="h-6 w-6 animate-spin text-surface-400" />
       </div>
     );
   }
@@ -54,7 +69,12 @@ function RootLayout() {
       <TitleBar appInfo={appInfo} />
       <main className="relative flex-1 overflow-hidden">
         <UpdateNotification />
-        <Outlet />
+        <div
+          className={`h-full ${pageTransition.className ?? ""}`}
+          onAnimationEnd={pageTransition.onAnimationEnd}
+        >
+          <Outlet />
+        </div>
       </main>
       <StatusBar />
       <ProtocolInstallDialog />

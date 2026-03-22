@@ -26,7 +26,8 @@ export const Switch = forwardRef<HTMLSpanElement, SwitchProps>(
         ref={ref}
         className={twMerge(
           "relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors",
-          "bg-surface-700 data-[checked]:bg-brand-500",
+          "bg-surface-700 data-[checked]:bg-accent-500",
+          "focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900 focus-visible:outline-none",
           "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
           trackClasses[size],
           className,

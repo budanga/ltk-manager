@@ -1,17 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
+import type { LucideIcon } from "lucide-react";
+import { Accessibility, Hammer, Library, Minus, Settings, Square, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { IconType } from "react-icons";
-import {
-  LuAccessibility,
-  LuHammer,
-  LuLibrary,
-  LuMinus,
-  LuSettings,
-  LuSquare,
-  LuX,
-} from "react-icons/lu";
 import { twMerge } from "tailwind-merge";
 
 import { IconButton, Tooltip } from "@/components";
@@ -20,18 +12,18 @@ import { api, type AppInfo } from "@/lib/tauri";
 import { NotificationCenter } from "./NotificationCenter";
 
 const navItems = [
-  { to: "/", label: "Library", icon: LuLibrary, exact: true },
-  { to: "/workshop", label: "Workshop", icon: LuHammer, exact: false },
+  { to: "/", label: "Library", icon: Library, exact: true },
+  { to: "/workshop", label: "Workshop", icon: Hammer, exact: false },
 ] as const;
 
 const linkBaseClass =
   "relative flex h-full items-center gap-1.5 px-3 text-sm font-medium transition-colors";
 const settingsLinkBase = "relative flex h-full items-center px-3 transition-colors";
-const activeLinkClass = "text-brand-400";
+const activeLinkClass = "text-accent-400";
 const inactiveLinkClass = "text-surface-400 hover:text-surface-200";
 
 function ActiveIndicator() {
-  return <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-brand-500" />;
+  return <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-accent-500" />;
 }
 
 function NavLink({
@@ -42,7 +34,7 @@ function NavLink({
 }: {
   to: string;
   label: string;
-  icon: IconType;
+  icon: LucideIcon;
   exact: boolean;
 }) {
   return (
@@ -108,7 +100,7 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
 
   return (
     <header
-      className="title-bar flex h-10 shrink-0 items-center justify-between border-b border-surface-600 select-none"
+      className="title-bar flex h-10 shrink-0 items-center justify-between border-b border-surface-600 bg-surface-950 select-none"
       data-tauri-drag-region
     >
       {/* Left: App icon, title, version, and navigation */}
@@ -139,7 +131,7 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
 
         <Tooltip content="Report a Bug">
           <IconButton
-            icon={<LuAccessibility className="h-5 w-5" />}
+            icon={<Accessibility className="h-5 w-5" />}
             variant="ghost"
             size="sm"
             onClick={() => open(bugReportUrl)}
@@ -161,7 +153,7 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
         >
           {({ isActive }) => (
             <>
-              <LuSettings className="h-4 w-4" />
+              <Settings className="h-4 w-4" />
               {isActive && <ActiveIndicator />}
             </>
           )}
@@ -172,34 +164,34 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
 
         {/* Window controls */}
         <IconButton
-          icon={<LuMinus className="h-4 w-4" />}
+          icon={<Minus className="h-3.5 w-3.5" />}
           variant="ghost"
-          size="md"
+          size="sm"
           onClick={handleMinimize}
           aria-label="Minimize"
-          className="h-full w-12 rounded-none text-surface-400 hover:bg-surface-700 hover:text-surface-200"
+          className="mx-0.5 h-7 w-7 rounded-md text-surface-400 transition-[transform,background-color,color] duration-100 hover:bg-amber-500 hover:text-white active:scale-90 active:opacity-80"
         />
         <IconButton
           icon={
             isMaximized ? (
-              <OverlappingSquares className="h-3.5 w-3.5" />
+              <OverlappingSquares className="h-3 w-3" />
             ) : (
-              <LuSquare className="h-3.5 w-3.5" />
+              <Square className="h-3 w-3" />
             )
           }
           variant="ghost"
-          size="md"
+          size="sm"
           onClick={handleMaximize}
           aria-label={isMaximized ? "Restore" : "Maximize"}
-          className="h-full w-12 rounded-none text-surface-400 hover:bg-surface-700 hover:text-surface-200"
+          className="mx-0.5 h-7 w-7 rounded-md text-surface-400 transition-[transform,background-color,color] duration-100 hover:bg-green-500 hover:text-white active:scale-90 active:opacity-80"
         />
         <IconButton
-          icon={<LuX className="h-4 w-4" />}
+          icon={<X className="h-3.5 w-3.5" />}
           variant="ghost"
-          size="md"
+          size="sm"
           onClick={handleClose}
           aria-label="Close"
-          className="h-full w-12 rounded-none text-surface-400 hover:bg-red-600 hover:text-white"
+          className="mx-0.5 mr-2 h-7 w-7 rounded-md text-surface-400 transition-[transform,background-color,color] duration-100 hover:bg-red-500 hover:text-white active:scale-90 active:opacity-80"
         />
       </div>
     </header>

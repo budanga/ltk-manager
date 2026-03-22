@@ -1,0 +1,372 @@
+/* ============================================
+   Global Tokens, Reset & Utilities
+   ============================================ */
+
+/* Accent color presets (HSL hues for generating color scales) */
+:root {
+  --accent-hue: 207; /* Default: Blue */
+  --accent-saturation: 100%;
+
+  /* Accent color preset hues */
+  --hue-blue: 207;
+  --hue-purple: 271;
+  --hue-green: 122;
+  --hue-orange: 36;
+  --hue-pink: 340;
+  --hue-red: 4;
+  --hue-teal: 174;
+}
+
+/* Dark theme - DEFAULT */
+:root {
+  /* RGB channels for alpha compositing in glass mode */
+  --surface-950-rgb: 20 20 22;
+  --surface-900-rgb: 28 28 31;
+
+  /* Background colors — layered with visible depth steps */
+  --surface-950: #141416; /* Deepest — titlebar, status bar */
+  --surface-900: #1c1c1f; /* Base background */
+  --surface-800: #242428; /* Toolbars, sidebars, cards */
+  --surface-700: #2c2c32; /* Inputs, hover backgrounds */
+  --surface-600: #3a3a42; /* Borders, dividers */
+  --surface-500: #4a4a52; /* Muted elements */
+  --surface-400: #85858f; /* Placeholder text */
+  --surface-300: #a0a0aa; /* Secondary text */
+  --surface-200: #d4d4d8; /* Primary text */
+  --surface-100: #ededf0; /* Bright text */
+  --surface-50: #fafafa; /* White text */
+
+  /* ---- Design Token Scales ---- */
+
+  /* Spacing: NNN × 6px */
+  --space-001: 6px;
+  --space-002: 12px;
+  --space-003: 18px;
+  --space-004: 24px;
+  --space-005: 30px;
+  --space-006: 36px;
+  --space-007: 42px;
+  --space-008: 48px;
+  --space-009: 54px;
+  --space-010: 60px;
+  --space-011: 66px;
+  --space-012: 72px;
+
+  /* Border radius */
+  --radius-001: 4px;
+  --radius-002: 6px;
+  --radius-003: 8px;
+  --radius-004: 12px;
+  --radius-005: 16px;
+  --radius-006: 9999px;
+
+  /* Icon sizes */
+  --icon-001: 12px;
+  --icon-002: 14px;
+  --icon-003: 16px;
+  --icon-004: 20px;
+  --icon-005: 24px;
+  --icon-006: 28px;
+  --icon-007: 32px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.3);
+
+  /* Z-index layers */
+  --z-dropdown: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+  --z-notification: 400;
+
+  /* Duration */
+  --duration-001: 50ms;
+  --duration-002: 100ms;
+  --duration-003: 150ms;
+  --duration-004: 200ms;
+  --duration-005: 300ms;
+  --duration-006: 500ms;
+
+  /* Easing */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Accent/brand colors (generated from hue) */
+  --accent-50: hsl(var(--accent-hue), var(--accent-saturation), 95%);
+  --accent-100: hsl(var(--accent-hue), var(--accent-saturation), 90%);
+  --accent-200: hsl(var(--accent-hue), var(--accent-saturation), 80%);
+  --accent-300: hsl(var(--accent-hue), var(--accent-saturation), 70%);
+  --accent-400: hsl(var(--accent-hue), var(--accent-saturation), 60%);
+  --accent-500: hsl(var(--accent-hue), var(--accent-saturation), 50%);
+  --accent-600: hsl(var(--accent-hue), var(--accent-saturation), 40%);
+  --accent-700: hsl(var(--accent-hue), var(--accent-saturation), 30%);
+  --accent-800: hsl(var(--accent-hue), var(--accent-saturation), 20%);
+  --accent-900: hsl(var(--accent-hue), var(--accent-saturation), 10%);
+}
+
+/* Light theme overrides (slate-tinted) */
+[data-theme="light"] {
+  --surface-950-rgb: 248 250 252;
+  --surface-900-rgb: 241 245 249;
+
+  /* Background colors - slate-tinted for light mode */
+  --surface-950: #f8fafc; /* Page background */
+  --surface-900: #f1f5f9; /* Editor background */
+  --surface-800: #e8ecf2; /* Sidebar background */
+  --surface-700: #dbe1ea; /* Input/card background */
+  --surface-600: #bfc8d4; /* Borders, dividers */
+  --surface-500: #8494a7; /* Muted elements */
+  --surface-400: #64748b; /* Placeholder text */
+  --surface-300: #475569; /* Secondary text */
+  --surface-200: #1e293b; /* Primary text */
+  --surface-100: #0f172a; /* Bright text */
+  --surface-50: #020617; /* Black text */
+}
+
+/* Base styles */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--surface-900);
+  color: var(--surface-200);
+  min-height: 100vh;
+}
+
+.root {
+  isolation: isolate;
+}
+
+/* Custom scrollbar (narrow, rounded, transparent track) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--surface-600);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--surface-500);
+}
+
+/* Text selection */
+::selection {
+  background: color-mix(in srgb, var(--accent-500) 30%, transparent);
+}
+
+/* ============================================
+   Density Mode Overrides
+   Applied via [data-density] attribute on <html>
+   ============================================ */
+:root {
+  --density-scale: 0.75;
+  --card-min-w: 240px;
+  --card-max-w: 320px;
+}
+
+[data-density="compact"] {
+  --density-scale: 0.6;
+  --card-min-w: 200px;
+  --card-max-w: 260px;
+  --space-001: calc(1 * 6px * 0.6);
+  --space-002: calc(2 * 6px * 0.6);
+  --space-003: calc(3 * 6px * 0.6);
+  --space-004: calc(4 * 6px * 0.6);
+  --space-005: calc(5 * 6px * 0.6);
+  --space-006: calc(6 * 6px * 0.6);
+  --space-007: calc(7 * 6px * 0.6);
+  --space-008: calc(8 * 6px * 0.6);
+  --space-009: calc(9 * 6px * 0.6);
+  --space-010: calc(10 * 6px * 0.6);
+  --space-011: calc(11 * 6px * 0.6);
+  --space-012: calc(12 * 6px * 0.6);
+  --icon-001: calc(12px * 0.6);
+  --icon-002: calc(14px * 0.6);
+  --icon-003: calc(16px * 0.6);
+  --icon-004: calc(20px * 0.6);
+  --icon-005: calc(24px * 0.6);
+  --icon-006: calc(28px * 0.6);
+  --icon-007: calc(32px * 0.6);
+}
+
+[data-density="normal"] {
+  --density-scale: 0.75;
+  --space-001: calc(1 * 6px * 0.75);
+  --space-002: calc(2 * 6px * 0.75);
+  --space-003: calc(3 * 6px * 0.75);
+  --space-004: calc(4 * 6px * 0.75);
+  --space-005: calc(5 * 6px * 0.75);
+  --space-006: calc(6 * 6px * 0.75);
+  --space-007: calc(7 * 6px * 0.75);
+  --space-008: calc(8 * 6px * 0.75);
+  --space-009: calc(9 * 6px * 0.75);
+  --space-010: calc(10 * 6px * 0.75);
+  --space-011: calc(11 * 6px * 0.75);
+  --space-012: calc(12 * 6px * 0.75);
+  --icon-001: calc(12px * 0.75);
+  --icon-002: calc(14px * 0.75);
+  --icon-003: calc(16px * 0.75);
+  --icon-004: calc(20px * 0.75);
+  --icon-005: calc(24px * 0.75);
+  --icon-006: calc(28px * 0.75);
+  --icon-007: calc(32px * 0.75);
+}
+
+[data-density="spacious"] {
+  --density-scale: 1;
+  --card-min-w: 280px;
+  --card-max-w: 380px;
+}
+
+/* ============================================
+   Reduce Motion
+   Applied via [data-reduce-motion] attribute on <html>
+   ============================================ */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ============================================
+   Scroll Fade Utility
+   ============================================ */
+.scroll-fade {
+  position: relative;
+}
+
+.scroll-fade::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2rem;
+  background: linear-gradient(to top, var(--surface-900), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Drag region for Tauri window */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] textarea {
+  -webkit-app-region: no-drag;
+}
+
+/* Toast viewport positioning */
+[data-toast-viewport] {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 9999;
+  max-width: 420px;
+  width: 100%;
+  pointer-events: none;
+}
+
+[data-toast-viewport] > * {
+  pointer-events: auto;
+}
+
+/* ============================================
+   Backdrop / Glassmorphism Mode
+   ============================================ */
+
+.backdrop-active body {
+  background-color: transparent;
+}
+
+.backdrop-active .root {
+  background-color: transparent;
+}
+
+.backdrop-active .root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--backdrop-image);
+  background-size: cover;
+  background-position: center;
+}
+
+.backdrop-active .title-bar {
+  background-color: rgb(var(--surface-950-rgb));
+  backdrop-filter: blur(var(--backdrop-blur, 40px)) saturate(1.2);
+}
+
+.backdrop-active main {
+  background-color: rgb(var(--surface-900-rgb) / 0.75);
+  backdrop-filter: blur(var(--backdrop-blur, 40px)) saturate(1.2);
+}
+
+.backdrop-active main > * > [class*="border-b"] {
+  background-color: rgb(var(--surface-950-rgb) / 0.4);
+}
+
+.backdrop-active main .settings-container {
+  background-color: rgb(var(--surface-900-rgb) / 0.5);
+  border-radius: 0.75rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.backdrop-active main * {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.backdrop-active:not([data-theme="light"]) {
+  --surface-400: #a0a0a0;
+  --surface-500: #707070;
+}
+
+/* Light theme backdrop adjustments */
+.backdrop-active[data-theme="light"] .title-bar {
+  background-color: rgb(var(--surface-950-rgb));
+}
+
+.backdrop-active[data-theme="light"] main {
+  background-color: rgb(var(--surface-900-rgb) / 0.88);
+}
+
+.backdrop-active[data-theme="light"] main > * > [class*="border-b"] {
+  background-color: rgb(var(--surface-950-rgb) / 0.5);
+}
+
+.backdrop-active[data-theme="light"] main .settings-container {
+  background-color: rgb(var(--surface-900-rgb) / 0.7);
+}
+
+.backdrop-active[data-theme="light"] main * {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.backdrop-active ::-webkit-scrollbar-track {
+  background-color: transparent;
+}

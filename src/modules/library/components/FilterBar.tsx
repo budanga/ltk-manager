@@ -1,5 +1,5 @@
+import { X } from "lucide-react";
 import { useMemo } from "react";
-import { LuX } from "react-icons/lu";
 
 import { MultiSelect, type MultiSelectOption } from "@/components";
 import type { FilterOptions } from "@/modules/library/api";
@@ -60,7 +60,7 @@ export function FilterBar({ filterOptions }: FilterBarProps) {
   );
 
   return (
-    <div className="flex items-center gap-3 border-b border-surface-700 px-4 py-2">
+    <div className="flex items-center gap-3 border-b border-surface-700 bg-surface-800/30 px-4 py-2">
       <MultiSelect
         label="Tags"
         options={tagOptions}
@@ -87,7 +87,7 @@ export function FilterBar({ filterOptions }: FilterBarProps) {
           onClick={clearFilters}
           className="flex shrink-0 items-center gap-1 text-xs text-surface-400 hover:text-surface-200"
         >
-          <LuX className="h-3 w-3" />
+          <X className="h-3 w-3" />
           Clear all
         </button>
       )}

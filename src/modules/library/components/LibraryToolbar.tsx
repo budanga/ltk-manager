@@ -1,4 +1,4 @@
-import { LuFolderOpen, LuGrid3X3, LuList, LuPlus, LuSearch } from "react-icons/lu";
+import { FolderOpen, Grid3X3, List, Plus, Search } from "lucide-react";
 
 import { Button, IconButton, Kbd, Tooltip } from "@/components";
 import type { PatcherStatus } from "@/lib/tauri";
@@ -39,14 +39,14 @@ export function LibraryToolbar({
 
   return (
     <div
-      className="flex items-center gap-4 border-b border-surface-600 px-4 py-3"
+      className="flex items-center gap-4 border-b border-surface-600 bg-surface-800/50 px-4 py-3"
       data-tauri-drag-region
     >
       <ProfileSelector />
 
       <Tooltip content="Open storage directory">
         <IconButton
-          icon={<LuFolderOpen className="h-4 w-4" />}
+          icon={<FolderOpen className="h-4 w-4" />}
           variant="ghost"
           size="sm"
           onClick={actions.handleOpenStorageDirectory}
@@ -55,13 +55,13 @@ export function LibraryToolbar({
 
       {/* Search */}
       <div className="relative flex-1">
-        <LuSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-surface-500" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-surface-500" />
         <input
           type="text"
           placeholder="Search mods..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-lg border border-surface-600 bg-surface-800 py-2 pr-4 pl-10 text-surface-100 placeholder:text-surface-500 focus:border-transparent focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          className="w-full rounded-lg border border-surface-600 bg-surface-800 py-2 pr-4 pl-10 text-surface-100 transition-colors duration-150 placeholder:text-surface-500 focus-visible:border-accent-500 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-0 focus-visible:outline-none"
         />
       </div>
 
@@ -71,7 +71,7 @@ export function LibraryToolbar({
       <div className="flex items-center gap-1">
         <Tooltip content="Grid view">
           <IconButton
-            icon={<LuGrid3X3 className="h-4 w-4" />}
+            icon={<Grid3X3 className="h-4 w-4" />}
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("grid")}
@@ -79,7 +79,7 @@ export function LibraryToolbar({
         </Tooltip>
         <Tooltip content="List view">
           <IconButton
-            icon={<LuList className="h-4 w-4" />}
+            icon={<List className="h-4 w-4" />}
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("list")}
@@ -101,7 +101,7 @@ export function LibraryToolbar({
           onClick={actions.handleInstallMod}
           loading={actions.installMod.isPending || actions.bulkInstallMods.isPending}
           disabled={isPatcherActive}
-          left={<LuPlus className="h-4 w-4" />}
+          left={<Plus className="h-4 w-4" />}
         >
           {actions.installMod.isPending || actions.bulkInstallMods.isPending
             ? "Installing..."

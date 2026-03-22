@@ -1,13 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { Copy, EllipsisVertical, FolderOpen, Info, Layers, Trash2 } from "lucide-react";
 import { useState } from "react";
-import {
-  LuCopy,
-  LuEllipsisVertical,
-  LuFolderOpen,
-  LuInfo,
-  LuLayers,
-  LuTrash2,
-} from "react-icons/lu";
 
 import { IconButton, Menu, Switch, useToast } from "@/components";
 import type { InstalledMod, ModLayer } from "@/lib/tauri";
@@ -85,12 +78,12 @@ export function ModCard({
     return (
       <div
         onClick={handleCardClick}
-        className={`flex items-center gap-4 rounded-lg border p-4 transition-all ${
+        className={`flex items-center gap-4 rounded-lg border p-4 transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out ${
           disabled ? "cursor-default" : "cursor-pointer"
         } ${
           mod.enabled
-            ? "border-brand-500/40 bg-surface-800 shadow-[0_0_15px_-3px] shadow-brand-500/30"
-            : "border-surface-700 bg-surface-900 hover:border-surface-600"
+            ? "border-accent-500/40 bg-surface-800 shadow-[0_0_15px_-3px] shadow-accent-500/30 hover:-translate-y-px"
+            : "border-surface-700 bg-surface-900 hover:-translate-y-px hover:border-surface-600 hover:bg-surface-800/80 hover:shadow-md"
         }`}
       >
         {/* Thumbnail */}
@@ -151,7 +144,7 @@ export function ModCard({
               disabled={disabled}
               render={
                 <IconButton
-                  icon={<LuEllipsisVertical className="h-4 w-4" />}
+                  icon={<EllipsisVertical className="h-4 w-4" />}
                   variant="ghost"
                   size="md"
                   disabled={disabled}
@@ -162,23 +155,20 @@ export function ModCard({
               <Menu.Positioner>
                 <Menu.Popup>
                   <Menu.Item
-                    icon={<LuInfo className="h-4 w-4" />}
+                    icon={<Info className="h-4 w-4" />}
                     onClick={() => onViewDetails?.(mod)}
                   >
                     View Details
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<LuFolderOpen className="h-4 w-4" />}
-                    onClick={handleOpenLocation}
-                  >
+                  <Menu.Item icon={<FolderOpen className="h-4 w-4" />} onClick={handleOpenLocation}>
                     Open Location
                   </Menu.Item>
-                  <Menu.Item icon={<LuCopy className="h-4 w-4" />} onClick={handleCopyId}>
+                  <Menu.Item icon={<Copy className="h-4 w-4" />} onClick={handleCopyId}>
                     Copy ID
                   </Menu.Item>
                   <Menu.Separator />
                   <Menu.Item
-                    icon={<LuTrash2 className="h-4 w-4" />}
+                    icon={<Trash2 className="h-4 w-4" />}
                     variant="danger"
                     disabled={disabled}
                     onClick={() => onUninstall(mod.id)}
@@ -197,12 +187,12 @@ export function ModCard({
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative rounded-xl border transition-all ${
+      className={`group relative rounded-xl border transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out ${
         disabled ? "cursor-default" : "cursor-pointer"
       } ${
         mod.enabled
-          ? "border-brand-500/40 bg-surface-800 shadow-[0_0_20px_-5px] shadow-brand-500/40"
-          : "border-surface-600 bg-surface-800 hover:border-surface-400"
+          ? "border-accent-500/40 bg-surface-800 shadow-[0_0_20px_-5px] shadow-accent-500/40 hover:-translate-y-px hover:shadow-[0_0_20px_-3px,0_4px_6px_-1px] hover:shadow-accent-500/40"
+          : "border-surface-600 bg-surface-800 hover:-translate-y-px hover:border-surface-400 hover:bg-surface-700/80 hover:shadow-md"
       }`}
     >
       {/* Toggle in top-right corner */}
@@ -273,7 +263,7 @@ export function ModCard({
                 disabled={disabled}
                 render={
                   <IconButton
-                    icon={<LuEllipsisVertical className="h-4 w-4" />}
+                    icon={<EllipsisVertical className="h-4 w-4" />}
                     variant="ghost"
                     size="md"
                     disabled={disabled}
@@ -284,23 +274,23 @@ export function ModCard({
                 <Menu.Positioner>
                   <Menu.Popup>
                     <Menu.Item
-                      icon={<LuInfo className="h-4 w-4" />}
+                      icon={<Info className="h-4 w-4" />}
                       onClick={() => onViewDetails?.(mod)}
                     >
                       View Details
                     </Menu.Item>
                     <Menu.Item
-                      icon={<LuFolderOpen className="h-4 w-4" />}
+                      icon={<FolderOpen className="h-4 w-4" />}
                       onClick={handleOpenLocation}
                     >
                       Open Location
                     </Menu.Item>
-                    <Menu.Item icon={<LuCopy className="h-4 w-4" />} onClick={handleCopyId}>
+                    <Menu.Item icon={<Copy className="h-4 w-4" />} onClick={handleCopyId}>
                       Copy ID
                     </Menu.Item>
                     <Menu.Separator />
                     <Menu.Item
-                      icon={<LuTrash2 className="h-4 w-4" />}
+                      icon={<Trash2 className="h-4 w-4" />}
                       variant="danger"
                       disabled={disabled}
                       onClick={() => onUninstall(mod.id)}
@@ -329,7 +319,7 @@ function ModPills({ mod, max, className }: { mod: InstalledMod; max: number; cla
   const overflow = pills.length - max;
 
   const colorClasses = {
-    brand: "bg-brand-500/15 text-brand-400",
+    brand: "bg-accent-500/15 text-accent-400",
     emerald: "bg-emerald-500/15 text-emerald-400",
   } as const;
 
@@ -354,7 +344,7 @@ function LayerBadge({ layers }: { layers: ModLayer[] }) {
 
   return (
     <span className="inline-flex items-center gap-0.5 rounded bg-surface-700/60 px-1.5 py-0.5 text-[10px] leading-tight text-surface-400">
-      <LuLayers className="h-2.5 w-2.5" />
+      <Layers className="h-2.5 w-2.5" />
       {allEnabled ? layers.length : `${enabledCount}/${layers.length}`}
     </span>
   );

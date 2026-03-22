@@ -1,6 +1,6 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import { X } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
-import { LuX } from "react-icons/lu";
 import { twMerge } from "tailwind-merge";
 
 // Root
@@ -50,7 +50,12 @@ export const DialogBackdrop = forwardRef<HTMLDivElement, DialogBackdropProps>(
     return (
       <BaseDialog.Backdrop
         ref={ref}
-        className={twMerge("fixed inset-0 z-40 bg-black/60 backdrop-blur-sm", className)}
+        className={twMerge(
+          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm",
+          "transition-opacity duration-200",
+          "data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+          className,
+        )}
         {...props}
       />
     );
@@ -82,6 +87,9 @@ export const DialogOverlay = forwardRef<HTMLDivElement, DialogOverlayProps>(
         className={twMerge(
           "fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2",
           "rounded-xl border border-surface-600 bg-surface-800 shadow-2xl",
+          "transition-[opacity,transform] duration-200 ease-out",
+          "data-[starting-style]:scale-95 data-[starting-style]:opacity-0",
+          "data-[ending-style]:scale-95 data-[ending-style]:opacity-0",
           overlaySizeClasses[size],
           className,
         )}
@@ -153,7 +161,7 @@ export const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
         )}
         {...props}
       >
-        <LuX className="h-5 w-5" />
+        <X className="h-5 w-5" />
       </BaseDialog.Close>
     );
   },

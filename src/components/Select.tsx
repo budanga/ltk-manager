@@ -1,6 +1,6 @@
 import { Select as BaseSelect } from "@base-ui/react/select";
+import { Check, ChevronDown } from "lucide-react";
 import { forwardRef, type ReactNode } from "react";
-import { LuCheck, LuChevronDown } from "react-icons/lu";
 import { twMerge } from "tailwind-merge";
 
 // Root
@@ -29,7 +29,7 @@ export const SelectTrigger = forwardRef<HTMLButtonElement, SelectTriggerProps>(
           "flex w-full items-center justify-between rounded-lg border px-4 py-2.5 text-sm transition-colors",
           "bg-surface-700 text-surface-50",
           "border-surface-500 hover:border-surface-400",
-          "focus:border-brand-500 focus:ring-1 focus:ring-brand-500 focus:outline-none",
+          "focus:border-accent-500 focus:ring-1 focus:ring-accent-500 focus:outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[placeholder]:text-surface-400",
           hasError && "border-red-500 focus:border-red-500 focus:ring-red-500",
@@ -77,8 +77,16 @@ export interface SelectIconProps extends Omit<BaseSelect.Icon.Props, "className"
 export const SelectIcon = forwardRef<HTMLSpanElement, SelectIconProps>(
   ({ className, ...props }, ref) => {
     return (
-      <BaseSelect.Icon ref={ref} className={twMerge("text-surface-400", className)} {...props}>
-        <LuChevronDown className="h-4 w-4" />
+      <BaseSelect.Icon
+        ref={ref}
+        className={twMerge(
+          "text-surface-400 transition-transform",
+          "data-[popup-open]:rotate-180",
+          className,
+        )}
+        {...props}
+      >
+        <ChevronDown className="h-4 w-4" />
       </BaseSelect.Icon>
     );
   },
@@ -143,8 +151,9 @@ export const SelectPopup = forwardRef<HTMLDivElement, SelectPopupProps>(
         className={twMerge(
           "max-h-60 overflow-y-auto",
           "rounded-lg border border-surface-600 bg-surface-700 py-1 shadow-xl",
-          "animate-fade-in",
-          "data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+          "transition-[opacity,transform] duration-150 ease-out",
+          "data-[starting-style]:-translate-y-1 data-[starting-style]:opacity-0",
+          "data-[ending-style]:-translate-y-1 data-[ending-style]:opacity-0",
           className,
         )}
         {...props}
@@ -176,7 +185,7 @@ export const SelectItem = forwardRef<HTMLDivElement, SelectItemProps>(
         {...props}
       >
         <BaseSelect.ItemIndicator className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-          <LuCheck className="h-3.5 w-3.5" />
+          <Check className="h-3.5 w-3.5" />
         </BaseSelect.ItemIndicator>
         <BaseSelect.ItemText>{children}</BaseSelect.ItemText>
       </BaseSelect.Item>
