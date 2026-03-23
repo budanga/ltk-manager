@@ -125,6 +125,10 @@ fn default_trusted_domains() -> Vec<String> {
     vec!["runeforge.dev".to_string(), "divineskins.gg".to_string()]
 }
 
+fn default_wad_blocklist() -> Vec<String> {
+    vec![]
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -172,6 +176,12 @@ pub struct Settings {
     /// Whether the library file watcher is enabled. Default: false.
     #[serde(default)]
     pub watcher_enabled: bool,
+    /// Whether to block mods from patching Scripts.wad.client. Default: true.
+    #[serde(default = "default_true")]
+    pub block_scripts_wad: bool,
+    /// Additional WAD files to exclude from overlay building.
+    #[serde(default = "default_wad_blocklist")]
+    pub wad_blocklist: Vec<String>,
     #[serde(default)]
     pub author_profiles: Vec<AuthorProfile>,
     #[serde(default)]
@@ -198,6 +208,8 @@ impl Default for Settings {
             kill_league_stops_patcher: true,
             trusted_domains: default_trusted_domains(),
             watcher_enabled: false,
+            block_scripts_wad: true,
+            wad_blocklist: default_wad_blocklist(),
             author_profiles: vec![],
             default_author_profile_id: None,
         }
@@ -222,6 +234,8 @@ mod tests {
         assert!(settings.reload_mods_hotkey.is_none());
         assert!(settings.kill_league_hotkey.is_none());
         assert!(settings.kill_league_stops_patcher);
+        assert!(settings.block_scripts_wad);
+        assert!(settings.wad_blocklist.is_empty());
     }
 
     #[test]
@@ -247,6 +261,8 @@ mod tests {
             kill_league_stops_patcher: true,
             trusted_domains: vec!["runeforge.dev".to_string()],
             watcher_enabled: false,
+            block_scripts_wad: true,
+            wad_blocklist: vec![],
             author_profiles: vec![AuthorProfile {
                 id: "test-id".to_string(),
                 name: "Test Author".to_string(),

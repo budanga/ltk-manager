@@ -1,5 +1,13 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { Info, Keyboard, Loader2, Palette, Settings as SettingsIcon, Users } from "lucide-react";
+import {
+  Info,
+  Keyboard,
+  Loader2,
+  Palette,
+  Settings as SettingsIcon,
+  ShieldAlert,
+  Users,
+} from "lucide-react";
 
 import { Tabs } from "@/components";
 import {
@@ -8,6 +16,7 @@ import {
   AuthorProfilesSection,
   GeneralSection,
   HotkeySection,
+  PatchingSection,
   useAppInfo,
   useSaveSettings,
   useSettings,
@@ -51,6 +60,14 @@ export function Settings() {
           >
             <SettingsIcon className="h-4 w-4 shrink-0" />
             General
+          </Tabs.Tab>
+          <Tabs.Tab
+            variant="pills"
+            value="patching"
+            className="flex items-center gap-2.5 text-left data-active:bg-accent-500/15 data-active:text-accent-300"
+          >
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            Patching
           </Tabs.Tab>
           <Tabs.Tab
             variant="pills"
@@ -101,6 +118,10 @@ export function Settings() {
               </div>
             )}
             <GeneralSection settings={settings} onSave={saveSettings} />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="patching" className="mx-auto max-w-2xl space-y-8 p-6">
+            <PatchingSection settings={settings} onSave={saveSettings} />
           </Tabs.Panel>
 
           <Tabs.Panel value="hotkeys" className="mx-auto max-w-2xl p-6">

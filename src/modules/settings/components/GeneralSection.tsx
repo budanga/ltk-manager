@@ -6,7 +6,6 @@ import { MigrationSection, MigrationWizardDialog } from "@/modules/migration";
 import { LeaguePathSection } from "./LeaguePathSection";
 import { MinimizeToTraySection } from "./MinimizeToTraySection";
 import { ModStorageSection } from "./ModStorageSection";
-import { PatchingSection } from "./PatchingSection";
 import { TrustedDomainsSection } from "./TrustedDomainsSection";
 import { WatcherSection } from "./WatcherSection";
 import { WorkshopSection } from "./WorkshopSection";
@@ -22,7 +21,6 @@ export function GeneralSection({ settings, onSave }: GeneralSectionProps) {
   return (
     <div className="space-y-4">
       <LeaguePathSection settings={settings} onSave={onSave} />
-      <PatchingSection settings={settings} onSave={onSave} />
       <MinimizeToTraySection settings={settings} onSave={onSave} />
       <TrustedDomainsSection settings={settings} onSave={onSave} />
       <WatcherSection settings={settings} onSave={onSave} />

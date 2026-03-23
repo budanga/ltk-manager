@@ -5,6 +5,9 @@ use camino::Utf8PathBuf;
 use std::path::PathBuf;
 use tauri::Emitter;
 
+const SCRIPTS_WAD: &str = "scripts.wad.client";
+const TFT_WAD: &str = "map22.wad.client";
+
 #[derive(Clone, serde::Serialize, ts_rs::TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
@@ -74,9 +77,16 @@ pub fn ensure_overlay(
     })?;
 
     // Build WAD blocklist from settings
-    let mut blocked_wads = Vec::new();
-    if !settings.patch_tft {
-        blocked_wads.push("map22.wad.client".to_string());
+    let mut blocked_wads: Vec<String> = settings
+        .wad_blocklist
+        .iter()
+        .map(|w| w.to_lowercase())
+        .collect();
+    if settings.block_scripts_wad && !blocked_wads.contains(&SCRIPTS_WAD.to_string()) {
+        blocked_wads.push(SCRIPTS_WAD.to_string());
+    }
+    if !settings.patch_tft && !blocked_wads.contains(&TFT_WAD.to_string()) {
+        blocked_wads.push(TFT_WAD.to_string());
     }
 
     // Build overlay using ltk_overlay crate

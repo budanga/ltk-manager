@@ -64,6 +64,14 @@ export type Settings = {
    */
   watcherEnabled: boolean;
   /**
+   * Whether to block mods from patching Scripts.wad.client. Default: true.
+   */
+  blockScriptsWad: boolean;
+  /**
+   * Additional WAD files to exclude from overlay building.
+   */
+  wadBlocklist: Array<string>;
+  /**
    * Saved author profiles for the Creator Workshop.
    */
   authorProfiles: Array<AuthorProfile>;
