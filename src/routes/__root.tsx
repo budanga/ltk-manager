@@ -20,7 +20,7 @@ function RootLayout() {
 
   const { data: setupRequired, isLoading: isCheckingSetup } = useCheckSetupRequired();
 
-  const density = useDisplayStore((s) => s.density);
+  const zoomLevel = useDisplayStore((s) => s.zoomLevel);
   const isReducedMotion = useReducedMotion();
   const pageTransition = usePageTransition();
 
@@ -29,8 +29,8 @@ function RootLayout() {
   useLibraryWatcher();
 
   useEffect(() => {
-    document.documentElement.dataset.density = density;
-  }, [density]);
+    document.documentElement.style.setProperty("--zoom-scale", String(zoomLevel / 100));
+  }, [zoomLevel]);
 
   useEffect(() => {
     document.documentElement.dataset.reduceMotion = String(isReducedMotion);

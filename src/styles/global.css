@@ -38,19 +38,22 @@
 
   /* ---- Design Token Scales ---- */
 
-  /* Spacing: NNN × 6px */
-  --space-001: 6px;
-  --space-002: 12px;
-  --space-003: 18px;
-  --space-004: 24px;
-  --space-005: 30px;
-  --space-006: 36px;
-  --space-007: 42px;
-  --space-008: 48px;
-  --space-009: 54px;
-  --space-010: 60px;
-  --space-011: 66px;
-  --space-012: 72px;
+  /* Zoom scale (set via JS, default 1 = 100%) */
+  --zoom-scale: 1;
+
+  /* Spacing: NNN × 4.5px × zoom scale (base 6px scaled down 25%) */
+  --space-001: calc(1 * 4.5px * var(--zoom-scale));
+  --space-002: calc(2 * 4.5px * var(--zoom-scale));
+  --space-003: calc(3 * 4.5px * var(--zoom-scale));
+  --space-004: calc(4 * 4.5px * var(--zoom-scale));
+  --space-005: calc(5 * 4.5px * var(--zoom-scale));
+  --space-006: calc(6 * 4.5px * var(--zoom-scale));
+  --space-007: calc(7 * 4.5px * var(--zoom-scale));
+  --space-008: calc(8 * 4.5px * var(--zoom-scale));
+  --space-009: calc(9 * 4.5px * var(--zoom-scale));
+  --space-010: calc(10 * 4.5px * var(--zoom-scale));
+  --space-011: calc(11 * 4.5px * var(--zoom-scale));
+  --space-012: calc(12 * 4.5px * var(--zoom-scale));
 
   /* Border radius */
   --radius-001: 4px;
@@ -60,14 +63,14 @@
   --radius-005: 16px;
   --radius-006: 9999px;
 
-  /* Icon sizes */
-  --icon-001: 12px;
-  --icon-002: 14px;
-  --icon-003: 16px;
-  --icon-004: 20px;
-  --icon-005: 24px;
-  --icon-006: 28px;
-  --icon-007: 32px;
+  /* Icon sizes (base scaled down 25%, then by zoom) */
+  --icon-001: calc(9px * var(--zoom-scale));
+  --icon-002: calc(10.5px * var(--zoom-scale));
+  --icon-003: calc(12px * var(--zoom-scale));
+  --icon-004: calc(15px * var(--zoom-scale));
+  --icon-005: calc(18px * var(--zoom-scale));
+  --icon-006: calc(21px * var(--zoom-scale));
+  --icon-007: calc(24px * var(--zoom-scale));
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -170,67 +173,12 @@ body {
 }
 
 /* ============================================
-   Density Mode Overrides
-   Applied via [data-density] attribute on <html>
+   Zoom-Scaled Card Widths
+   --zoom-scale is set via JS on :root
    ============================================ */
 :root {
-  --density-scale: 0.75;
-  --card-min-w: 240px;
-  --card-max-w: 320px;
-}
-
-[data-density="compact"] {
-  --density-scale: 0.6;
-  --card-min-w: 200px;
-  --card-max-w: 260px;
-  --space-001: calc(1 * 6px * 0.6);
-  --space-002: calc(2 * 6px * 0.6);
-  --space-003: calc(3 * 6px * 0.6);
-  --space-004: calc(4 * 6px * 0.6);
-  --space-005: calc(5 * 6px * 0.6);
-  --space-006: calc(6 * 6px * 0.6);
-  --space-007: calc(7 * 6px * 0.6);
-  --space-008: calc(8 * 6px * 0.6);
-  --space-009: calc(9 * 6px * 0.6);
-  --space-010: calc(10 * 6px * 0.6);
-  --space-011: calc(11 * 6px * 0.6);
-  --space-012: calc(12 * 6px * 0.6);
-  --icon-001: calc(12px * 0.6);
-  --icon-002: calc(14px * 0.6);
-  --icon-003: calc(16px * 0.6);
-  --icon-004: calc(20px * 0.6);
-  --icon-005: calc(24px * 0.6);
-  --icon-006: calc(28px * 0.6);
-  --icon-007: calc(32px * 0.6);
-}
-
-[data-density="normal"] {
-  --density-scale: 0.75;
-  --space-001: calc(1 * 6px * 0.75);
-  --space-002: calc(2 * 6px * 0.75);
-  --space-003: calc(3 * 6px * 0.75);
-  --space-004: calc(4 * 6px * 0.75);
-  --space-005: calc(5 * 6px * 0.75);
-  --space-006: calc(6 * 6px * 0.75);
-  --space-007: calc(7 * 6px * 0.75);
-  --space-008: calc(8 * 6px * 0.75);
-  --space-009: calc(9 * 6px * 0.75);
-  --space-010: calc(10 * 6px * 0.75);
-  --space-011: calc(11 * 6px * 0.75);
-  --space-012: calc(12 * 6px * 0.75);
-  --icon-001: calc(12px * 0.75);
-  --icon-002: calc(14px * 0.75);
-  --icon-003: calc(16px * 0.75);
-  --icon-004: calc(20px * 0.75);
-  --icon-005: calc(24px * 0.75);
-  --icon-006: calc(28px * 0.75);
-  --icon-007: calc(32px * 0.75);
-}
-
-[data-density="spacious"] {
-  --density-scale: 1;
-  --card-min-w: 280px;
-  --card-max-w: 380px;
+  --card-min-w: calc(180px * var(--zoom-scale, 1));
+  --card-max-w: calc(240px * var(--zoom-scale, 1));
 }
 
 /* ============================================

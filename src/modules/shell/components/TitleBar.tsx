@@ -2,12 +2,21 @@ import { Link } from "@tanstack/react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-shell";
 import type { LucideIcon } from "lucide-react";
-import { Accessibility, Hammer, Library, Minus, Settings, Square, X } from "lucide-react";
+import {
+  Accessibility,
+  FolderOpen,
+  Hammer,
+  Library,
+  Minus,
+  Settings,
+  Square,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
-import { IconButton, Tooltip } from "@/components";
-import { api, type AppInfo } from "@/lib/tauri";
+import { IconButton, Tooltip, useToast } from "@/components";
+import { api, type AppInfo, unwrap } from "@/lib/tauri";
 
 import { NotificationCenter } from "./NotificationCenter";
 
@@ -77,6 +86,20 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
   const bugReportUrl = buildBugReportUrl(appInfo);
   const [isMaximized, setIsMaximized] = useState(false);
   const appWindow = getCurrentWindow();
+  const toast = useToast();
+
+  async function handleOpenStorageDirectory() {
+    try {
+      const result = await api.getStorageDirectory();
+      const path = unwrap(result);
+      await api.revealInExplorer(path);
+    } catch (error: unknown) {
+      toast.error(
+        "Failed to open directory",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
 
   useEffect(() => {
     // Check initial maximized state
@@ -127,6 +150,17 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
 
       {/* Right: Notifications, Settings, and window controls */}
       <div className="flex h-full items-center">
+        <Tooltip content="Open storage directory">
+          <IconButton
+            icon={<FolderOpen className="h-4 w-4" />}
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenStorageDirectory}
+            aria-label="Open storage directory"
+            className="text-surface-400 hover:text-surface-200"
+          />
+        </Tooltip>
+
         <NotificationCenter />
 
         <Tooltip content="Report a Bug">

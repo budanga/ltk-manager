@@ -5,9 +5,9 @@ import type { Settings } from "@/lib/tauri";
 
 import { AccentColorPicker } from "./AccentColorPicker";
 import { BackdropImagePicker } from "./BackdropImagePicker";
-import { DensityPicker } from "./DensityPicker";
 import { ReduceMotionPicker } from "./ReduceMotionPicker";
 import { ThemePicker } from "./ThemePicker";
+import { ZoomLevelPicker } from "./ZoomLevelPicker";
 
 interface AppearanceSectionProps {
   settings: Settings;
@@ -21,7 +21,7 @@ export function AppearanceSection({ settings, onSave }: AppearanceSectionProps) 
         <ThemePicker settings={settings} onSave={onSave} />
         <AccentColorPicker settings={settings} onSave={onSave} />
         <BackdropImagePicker settings={settings} onSave={onSave} />
-        <DensityPicker />
+        <ZoomLevelPicker />
         <ReduceMotionPicker />
       </div>
     </SectionCard>
