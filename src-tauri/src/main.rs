@@ -151,7 +151,7 @@ fn main() {
                 .icon(app.default_window_icon().cloned().unwrap())
                 .tooltip("LTK Manager")
                 .menu(&tray_menu)
-                .menu_on_left_click(false)
+                .show_menu_on_left_click(false)
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
