@@ -16,7 +16,8 @@ pub struct AppInfo {
 /// Get basic app information.
 #[tauri::command]
 pub fn get_app_info() -> IpcResult<AppInfo> {
-    let log_file_path = crate::default_log_dir().map(|p| p.to_string_lossy().into_owned());
+    let log_file_path = crate::logging::default_log_dir()
+        .map(|p: std::path::PathBuf| p.to_string_lossy().into_owned());
 
     IpcResult::ok(AppInfo {
         name: "LTK Manager".to_string(),

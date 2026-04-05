@@ -5,9 +5,11 @@ pub use download::download_mod_file;
 pub(crate) use download::{extract_extension_from_content_disposition, sniff_extension_from_file};
 
 use crate::error::{AppError, AppResult};
+use crate::state::SettingsState;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::time::Instant;
+use tauri::{Emitter, Manager};
 use ts_rs::TS;
 use url::Url;
 
@@ -178,6 +180,68 @@ pub fn is_domain_trusted(download_url: &str, trusted_domains: &[String]) -> bool
     trusted_domains
         .iter()
         .any(|d| host == d.as_str() || host.ends_with(&format!(".{d}")))
+}
+
+/// Process deep-link URLs and emit events to the frontend.
+pub fn handle_urls(app_handle: &tauri::AppHandle, urls: &[url::Url]) {
+    for url in urls {
+        handle_single(app_handle, url.as_str());
+    }
+}
+
+/// Process deep-link URLs from CLI argv (used by single-instance callback).
+pub fn handle_argv(app_handle: &tauri::AppHandle, argv: &[String]) {
+    for arg in argv.iter().skip(1) {
+        if arg.starts_with("ltk://") {
+            handle_single(app_handle, arg);
+        }
+    }
+
+    if let Some(window) = app_handle.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+fn handle_single(app_handle: &tauri::AppHandle, raw_url: &str) {
+    tracing::info!("Received deep-link: {}", raw_url);
+
+    let deep_link_state: tauri::State<'_, DeepLinkState> = app_handle.state();
+    if deep_link_state.should_rate_limit() {
+        tracing::warn!("Deep-link rate-limited, ignoring: {}", raw_url);
+        return;
+    }
+
+    match parse_deep_link_url(raw_url) {
+        Ok(request) => {
+            tracing::info!("Parsed deep-link install request: {:?}", request);
+
+            let settings_state: tauri::State<'_, SettingsState> = app_handle.state();
+            if let Ok(settings) = settings_state.0.lock() {
+                if !is_domain_trusted(&request.url, &settings.trusted_domains) {
+                    let domain = Url::parse(&request.url)
+                        .ok()
+                        .and_then(|u| u.host_str().map(String::from))
+                        .unwrap_or_default();
+                    tracing::warn!("Deep-link blocked: domain '{}' not in trusted list", domain);
+                    let _ = app_handle.emit(
+                        "deep-link-blocked",
+                        serde_json::json!({
+                            "domain": domain,
+                            "url": request.url,
+                        }),
+                    );
+                    return;
+                }
+            }
+
+            let _ = app_handle.emit("deep-link-install", &request);
+        }
+        Err(e) => {
+            tracing::error!("Failed to parse deep-link URL: {}", e);
+        }
+    }
 }
 
 fn truncate_str(s: &str, max_chars: usize) -> &str {
