@@ -13,6 +13,7 @@ import type {
   InstalledMod,
   LibraryFolder,
   ModpkgInfo,
+  ModWadReport,
   PackProjectArgs,
   PackResult,
   PatcherConfig,
@@ -95,6 +96,10 @@ export const api = {
     invokeResult<void>("set_mod_layers", { modId, layerStates }),
   enableModWithLayers: (modId: string, layerStates: Record<string, boolean>) =>
     invokeResult<void>("enable_mod_with_layers", { modId, layerStates }),
+  getModWadReport: (modId: string) =>
+    invokeResult<ModWadReport | null>("get_mod_wad_report", { modId }),
+  getAllModWadReports: () => invokeResult<Record<string, ModWadReport>>("get_all_mod_wad_reports"),
+  analyzeModWads: (modId: string) => invokeResult<ModWadReport>("analyze_mod_wads", { modId }),
 
   // Migration
   scanCslolMods: (directory: string) =>

@@ -1,9 +1,11 @@
 use crate::error::{AppError, AppResult, IpcResult, MutexResultExt};
 use crate::mods::{
-    inspect_modpkg_file, BulkInstallResult, InstalledMod, ModLibraryState, ModpkgInfo,
+    inspect_modpkg_file, BulkInstallResult, InstalledMod, ModLibraryState, ModWadReport,
+    ModpkgInfo, WadReportState,
 };
 use crate::patcher::PatcherState;
 use crate::state::SettingsState;
+use camino::Utf8PathBuf;
 use std::collections::HashMap;
 use tauri::State;
 
@@ -168,6 +170,77 @@ pub fn get_storage_directory(
         let settings = settings.0.lock().mutex_err()?.clone();
         let storage_dir = library.0.storage_dir(&settings)?;
         Ok(storage_dir.display().to_string())
+    })();
+    result.into()
+}
+
+/// Get the cached WAD footprint report for a single mod, if one exists.
+///
+/// Returns `null` when the mod has never been analyzed nor included in a
+/// successful patch run. Reports include an `is_stale` flag computed at read
+/// time against the most recently observed game-index fingerprint.
+#[tauri::command]
+pub fn get_mod_wad_report(
+    mod_id: String,
+    reports: State<WadReportState>,
+) -> IpcResult<Option<ModWadReport>> {
+    let result: AppResult<Option<ModWadReport>> = (|| {
+        let store = reports.0.lock().mutex_err()?;
+        Ok(store.get(&mod_id))
+    })();
+    result.into()
+}
+
+/// Get all cached WAD footprint reports in a single batch. Returns a map of
+/// mod id → report. Far cheaper than one IPC call per mod.
+#[tauri::command]
+pub fn get_all_mod_wad_reports(
+    reports: State<WadReportState>,
+) -> IpcResult<HashMap<String, ModWadReport>> {
+    let result: AppResult<HashMap<String, ModWadReport>> = (|| {
+        let store = reports.0.lock().mutex_err()?;
+        Ok(store.get_all())
+    })();
+    result.into()
+}
+
+/// Force a fresh WAD footprint analysis for a single mod without running the
+/// full patcher. Safe to call while the patcher is running — it neither
+/// touches overlay state nor takes the patcher mutex.
+///
+/// Runs synchronously on Tauri's blocking command thread pool (not a Tokio
+/// worker) so heavy I/O (game index build, modpkg mount) won't starve the
+/// async runtime.
+#[tauri::command]
+pub fn analyze_mod_wads(
+    mod_id: String,
+    library: State<ModLibraryState>,
+    settings: State<SettingsState>,
+    reports: State<WadReportState>,
+) -> IpcResult<ModWadReport> {
+    let result: AppResult<ModWadReport> = (|| {
+        let settings_snapshot = settings.0.lock().mutex_err()?.clone();
+        let game_dir = crate::overlay::resolve_game_dir(&settings_snapshot)?;
+        let (profile_dir, mut enabled_mod) = library
+            .0
+            .build_single_mod_provider(&settings_snapshot, &mod_id)?;
+
+        let utf8_game_dir = Utf8PathBuf::from_path_buf(game_dir)
+            .map_err(|p| AppError::InvalidPath(format!("Non-UTF8 game dir: {}", p.display())))?;
+        let utf8_state_dir = Utf8PathBuf::from_path_buf(profile_dir)
+            .map_err(|p| AppError::InvalidPath(format!("Non-UTF8 profile dir: {}", p.display())))?;
+
+        let upstream = ltk_overlay::OverlayBuilder::analyze_single_mod(
+            &utf8_game_dir,
+            &utf8_state_dir,
+            &mut enabled_mod,
+        )
+        .map_err(|e| AppError::Other(format!("Mod analysis failed: {}", e)))?;
+
+        let report = ModWadReport::from_upstream(upstream);
+        let mut store = reports.0.lock().mutex_err()?;
+        store.upsert(report.clone())?;
+        Ok(store.get(&report.mod_id).unwrap_or(report))
     })();
     result.into()
 }

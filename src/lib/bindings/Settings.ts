@@ -44,6 +44,18 @@ export type Settings = {
    */
   startInTray: boolean;
   /**
+   * Whether to register the app to launch automatically on login. Default: false.
+   */
+  autoRun: boolean;
+  /**
+   * When starting in tray, show the window if an update is available. Default: false.
+   */
+  startInTrayUnlessUpdate: boolean;
+  /**
+   * Always start the patcher automatically on launch. Default: false.
+   */
+  alwaysStartPatcher: boolean;
+  /**
    * Whether the user has dismissed the cslol-manager migration banner.
    */
   migrationDismissed: boolean;
@@ -77,11 +89,4 @@ export type Settings = {
   wadBlocklist: Array<string>;
   authorProfiles: Array<AuthorProfile>;
   defaultAuthorProfileId: string | null;
-
-  /** Whether to register the app to launch automatically on login. Default: false. */
-  autoRun: boolean;
-  /** When starting in tray, show the window if an update is available. Default: false. */
-  startInTrayUnlessUpdate: boolean;
-  /** Always start the patcher automatically on launch. Default: false. */
-  alwaysStartPatcher: boolean;
 };

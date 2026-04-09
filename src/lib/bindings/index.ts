@@ -23,6 +23,7 @@ export type { MigrationPhase } from "./MigrationPhase";
 export type { MigrationProgress } from "./MigrationProgress";
 export type { ModLayer } from "./ModLayer";
 export type { ModpkgInfo } from "./ModpkgInfo";
+export type { ModWadReport } from "./ModWadReport";
 export type { OverlayProgress } from "./OverlayProgress";
 export type { OverlayStage } from "./OverlayStage";
 export type { PackFormat } from "./PackFormat";

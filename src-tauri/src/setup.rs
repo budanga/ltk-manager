@@ -3,7 +3,7 @@ use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_deep_link::DeepLinkExt;
 
 use crate::deep_link::DeepLinkState;
-use crate::mods::{ModLibrary, ModLibraryState};
+use crate::mods::{ModLibrary, ModLibraryState, WadReportState};
 use crate::patcher::PatcherState;
 use crate::state::SettingsState;
 use crate::workshop::{Workshop, WorkshopState};
@@ -24,29 +24,28 @@ pub fn run(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
     initialize_first_run(&app_handle, &settings_state);
 
-    {
-        let settings = settings_state.0.lock().unwrap();
-        match mod_library.0.reconcile_index(&settings) {
-            Ok(true) => tracing::info!("Library index reconciled on startup"),
-            Ok(false) => {}
-            Err(e) => tracing::warn!("Failed to reconcile library on startup: {}", e),
-        }
+    let settings = settings_state.0.lock().unwrap().clone();
+
+    // Register WadReportState BEFORE reconcile so that the reconcile pass can
+    // invalidate stale reports and prune orphans on the first startup.
+    let storage_dir = mod_library.0.storage_dir(&settings).ok();
+    let wad_report_state = WadReportState::new(storage_dir.as_deref());
+    app.manage(wad_report_state);
+
+    match mod_library.0.reconcile_index(&settings) {
+        Ok(true) => tracing::info!("Library index reconciled on startup"),
+        Ok(false) => {}
+        Err(e) => tracing::warn!("Failed to reconcile library on startup: {}", e),
     }
 
     let hotkey_manager = crate::hotkeys::HotkeyManager::new(&app_handle);
-    {
-        let settings = settings_state.0.lock().unwrap();
-        hotkey_manager.register_from_settings(&settings);
-    }
+    hotkey_manager.register_from_settings(&settings);
 
-    {
-        let settings = settings_state.0.lock().unwrap();
-        let autolaunch = app_handle.autolaunch();
-        if settings.auto_run {
-            let _ = autolaunch.enable();
-        } else {
-            let _ = autolaunch.disable();
-        }
+    let autolaunch = app_handle.autolaunch();
+    if settings.auto_run {
+        let _ = autolaunch.enable();
+    } else {
+        let _ = autolaunch.disable();
     }
 
     let deep_link_state = DeepLinkState::new();
