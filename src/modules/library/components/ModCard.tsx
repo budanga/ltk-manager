@@ -27,6 +27,7 @@ import { useModThumbnail } from "@/modules/library/api/useModThumbnail";
 import { getTagLabel } from "@/modules/library/utils/labels";
 
 import { LayerPickerPopover } from "./LayerPickerPopover";
+import { WadCountBadge } from "./WadCountBadge";
 
 interface ModCardProps {
   mod: InstalledMod;
@@ -147,6 +148,9 @@ export function ModCard({ mod, viewMode, onViewDetails }: ModCardProps) {
             </p>
             <ModPills mod={mod} max={3} />
             {isMultiLayer && <LayerBadge layers={mod.layers} />}
+            <span data-no-toggle onClick={(e) => e.stopPropagation()}>
+              <WadCountBadge modId={mod.id} />
+            </span>
           </div>
         </div>
 
@@ -307,6 +311,9 @@ export function ModCard({ mod, viewMode, onViewDetails }: ModCardProps) {
         <div className="mb-1 flex min-h-5 items-center gap-1">
           <ModPills mod={mod} max={3} />
           {isMultiLayer && <LayerBadge layers={mod.layers} />}
+          <span data-no-toggle onClick={(e) => e.stopPropagation()}>
+            <WadCountBadge modId={mod.id} />
+          </span>
         </div>
 
         <div className="mt-auto flex items-center text-xs text-surface-500">

@@ -7,4 +7,6 @@ export const libraryKeys = {
   activeProfile: () => [...libraryKeys.profiles(), "active"] as const,
   folders: () => [...libraryKeys.all, "folders"] as const,
   folderOrder: () => [...libraryKeys.all, "folderOrder"] as const,
+  wadReports: () => [...libraryKeys.all, "wadReport"] as const,
+  wadReport: (modId: string) => [...libraryKeys.wadReports(), modId] as const,
 };

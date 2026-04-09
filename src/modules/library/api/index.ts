@@ -1,4 +1,5 @@
 export { libraryKeys } from "./keys";
+export { useAnalyzeModWads } from "./useAnalyzeModWads";
 export { useBulkInstallMods } from "./useBulkInstallMods";
 export { useCreateProfile } from "./useCreateProfile";
 export { useDeleteProfile } from "./useDeleteProfile";
@@ -22,6 +23,7 @@ export { useLibraryContent } from "./useLibraryContent";
 export { useLibraryViewMode } from "./useLibraryViewMode";
 export { useLibraryWatcher } from "./useLibraryWatcher";
 export { useModFileDrop } from "./useModFileDrop";
+export { useAllModWadReports, useModWadReport } from "./useModWadReport";
 export { useMoveModToFolder, useReorderFolderMods, useReorderFolders } from "./useMoveMod";
 export { useRenameProfile } from "./useRenameProfile";
 export { useReorderMods } from "./useReorderMods";

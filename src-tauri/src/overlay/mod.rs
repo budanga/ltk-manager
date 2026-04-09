@@ -1,9 +1,9 @@
 use crate::error::{AppError, AppResult};
-use crate::mods::ModLibrary;
+use crate::mods::{ModLibrary, WadReportState};
 use crate::state::Settings;
 use camino::Utf8PathBuf;
 use std::path::PathBuf;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 const SCRIPTS_WAD: &str = "scripts.wad.client";
 const TFT_WAD: &str = "map22.wad.client";
@@ -139,10 +139,28 @@ pub fn ensure_overlay(
         .build()
         .map_err(|e| AppError::Other(format!("Overlay build failed: {}", e)))?;
 
+    // Capture per-mod WAD reports for the library badge UI. Failure to
+    // persist must not fail the patch — log and continue.
+    //
+    // Note: `OverlayBuilder::build()` emits its own `Complete` progress event
+    // *before* returning, so the frontend may see that event before the reports
+    // are persisted. We emit a dedicated `wad-reports-updated` event after
+    // persisting so the frontend knows the cache is ready to query.
+    let reports = builder.take_mod_wad_reports();
+    if !reports.is_empty() {
+        if let Some(state) = library.app_handle().try_state::<WadReportState>() {
+            if let Err(e) = state.record_reports(reports) {
+                tracing::warn!("Failed to persist per-mod WAD reports: {}", e);
+            } else {
+                let _ = library.app_handle().emit("wad-reports-updated", ());
+            }
+        }
+    }
+
     Ok(overlay_root)
 }
 
-fn resolve_game_dir(settings: &Settings) -> AppResult<PathBuf> {
+pub(crate) fn resolve_game_dir(settings: &Settings) -> AppResult<PathBuf> {
     let league_root = settings
         .league_path
         .clone()

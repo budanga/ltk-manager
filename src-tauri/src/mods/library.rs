@@ -378,6 +378,68 @@ impl ModLibrary {
         })
     }
 
+    /// Build a single `ltk_overlay::EnabledMod` for a mod by id, plus the
+    /// active profile directory (for sharing `game_index.bin` with the patcher).
+    /// Used by the on-demand WAD analysis path so the patcher worker thread
+    /// doesn't need to be involved.
+    ///
+    /// Returns [`AppError::ModNotFound`] if the mod isn't in the library and
+    /// [`AppError::InvalidPath`] if the archive file is missing.
+    pub fn build_single_mod_provider(
+        &self,
+        settings: &Settings,
+        mod_id: &str,
+    ) -> AppResult<(PathBuf, ltk_overlay::EnabledMod)> {
+        self.with_index(settings, |storage_dir, index| {
+            let entry = index
+                .mods
+                .iter()
+                .find(|m| m.id == mod_id)
+                .ok_or_else(|| AppError::ModNotFound(mod_id.to_string()))?;
+
+            let archive_path = entry.archive_path(storage_dir);
+            if !archive_path.exists() {
+                return Err(AppError::InvalidPath(format!(
+                    "Mod archive missing on disk: {}",
+                    archive_path.display()
+                )));
+            }
+
+            let utf8_archive_path =
+                Utf8PathBuf::from_path_buf(archive_path.clone()).map_err(|p| {
+                    AppError::InvalidPath(format!("Non-UTF8 archive path: {}", p.display()))
+                })?;
+
+            let content: Box<dyn ltk_overlay::ModContentProvider> = match entry.format {
+                ModArchiveFormat::Fantome => Box::new(
+                    FantomeContent::new(File::open(&archive_path)?)
+                        .map_err(|e| {
+                            AppError::Other(format!("Failed to open fantome archive: {}", e))
+                        })?
+                        .with_archive_path(utf8_archive_path),
+                ),
+                ModArchiveFormat::Modpkg => Box::new(
+                    ModpkgContent::new(Modpkg::mount_from_reader(File::open(&archive_path)?)?)
+                        .with_archive_path(utf8_archive_path),
+                ),
+            };
+
+            let active_profile = super::get_active_profile(index)?;
+            let profile_dir = storage_dir
+                .join("profiles")
+                .join(active_profile.slug.as_str());
+
+            Ok((
+                profile_dir,
+                ltk_overlay::EnabledMod {
+                    id: entry.id.clone(),
+                    content,
+                    enabled_layers: None,
+                },
+            ))
+        })
+    }
+
     pub fn get_enabled_mods_for_overlay(
         &self,
         settings: &Settings,

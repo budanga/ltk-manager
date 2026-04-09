@@ -4,11 +4,13 @@ mod library;
 mod migration;
 mod profiles;
 mod schema_migration;
+mod wad_reports;
 pub(crate) mod watcher;
 
 pub use migration::*;
 
 pub use inspect::{inspect_modpkg_file, ModpkgInfo};
+pub use wad_reports::{ModWadReport, WadReportState};
 
 use crate::error::{AppError, AppResult, MutexResultExt};
 use crate::state::{get_app_data_dir, Settings};
@@ -20,7 +22,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use ts_rs::TS;
 use uuid::Uuid;
 
@@ -86,10 +88,24 @@ impl ModLibrary {
         let _lock = self.index_lock.lock().mutex_err()?;
         let storage_dir = self.storage_dir(settings)?;
         let mut index = load_library_index(&storage_dir)?;
-        let reconciled = reconcile_library_index(&storage_dir, &mut index);
+        let mut refreshed_ids: Vec<String> = Vec::new();
+        let reconciled = reconcile_library_index(&storage_dir, &mut index, &mut refreshed_ids);
         if reconciled {
             save_library_index(&storage_dir, &index)?;
             self.stamp_mutation();
+        }
+        // Flag any cached WAD reports for mods whose archives were re-extracted
+        // (content fingerprint drift) and prune entries for mods no longer present.
+        if let Some(state) = self
+            .app_handle
+            .try_state::<crate::mods::wad_reports::WadReportState>()
+        {
+            if let Ok(mut store) = state.0.lock() {
+                let _ = store.invalidate_by_content(&refreshed_ids);
+                let valid_ids: std::collections::HashSet<String> =
+                    index.mods.iter().map(|m| m.id.clone()).collect();
+                let _ = store.prune_orphans(&valid_ids);
+            }
         }
         Ok(reconciled)
     }
@@ -122,6 +138,18 @@ impl ModLibrary {
         save_library_index(&storage_dir, &index)?;
         if let Err(e) = invalidate_overlay_for_profile(&storage_dir, &index) {
             tracing::warn!("Failed to invalidate overlay: {}", e);
+        }
+        // Drop WAD report cache entries for mods that are no longer in the
+        // library after this mutation (e.g. uninstall paths).
+        if let Some(state) = self
+            .app_handle
+            .try_state::<crate::mods::wad_reports::WadReportState>()
+        {
+            if let Ok(mut store) = state.0.lock() {
+                let valid_ids: std::collections::HashSet<String> =
+                    index.mods.iter().map(|m| m.id.clone()).collect();
+                let _ = store.prune_orphans(&valid_ids);
+            }
         }
         self.stamp_mutation();
         Ok(result)
@@ -446,12 +474,16 @@ fn invalidate_overlay_for_profile(storage_dir: &Path, index: &LibraryIndex) -> A
 /// 4. Re-extract metadata when an archive is newer than its cached config
 ///
 /// Returns `true` if changes were made.
-fn reconcile_library_index(storage_dir: &Path, index: &mut LibraryIndex) -> bool {
+fn reconcile_library_index(
+    storage_dir: &Path,
+    index: &mut LibraryIndex,
+    refreshed_ids: &mut Vec<String>,
+) -> bool {
     let mut changed = false;
     changed |= remove_orphaned_entries(storage_dir, index);
     changed |= sync_profile_mod_orders(index);
     changed |= discover_new_archives(storage_dir, index);
-    changed |= refresh_stale_metadata(storage_dir, index);
+    changed |= refresh_stale_metadata(storage_dir, index, refreshed_ids);
     changed
 }
 
@@ -649,7 +681,13 @@ fn cleanup_failed_discovery(original_path: &Path, storage_dir: &Path) {
 }
 
 /// Re-extract metadata for mods whose archive is newer than the cached `mod.config.json`.
-fn refresh_stale_metadata(storage_dir: &Path, index: &LibraryIndex) -> bool {
+/// Also collects the ids of mods whose archive changed, so the caller can flag
+/// any cached WAD reports as stale.
+fn refresh_stale_metadata(
+    storage_dir: &Path,
+    index: &LibraryIndex,
+    refreshed_ids: &mut Vec<String>,
+) -> bool {
     let mut changed = false;
 
     for entry in &index.mods {
@@ -679,6 +717,7 @@ fn refresh_stale_metadata(storage_dir: &Path, index: &LibraryIndex) -> bool {
             match result {
                 Ok(()) => {
                     tracing::info!("Re-extracted stale metadata for mod {}", entry.id);
+                    refreshed_ids.push(entry.id.clone());
                     changed = true;
                 }
                 Err(e) => {
@@ -1022,7 +1061,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(!reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.mods.len(), 1);
         assert_eq!(index.profiles[0].mod_order, vec!["mod-a"]);
         assert_eq!(index.profiles[0].enabled_mods, vec!["mod-a"]);
@@ -1056,7 +1099,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert!(index.mods.is_empty());
         assert!(index.profiles[0].mod_order.is_empty());
         assert!(index.profiles[0].enabled_mods.is_empty());
@@ -1090,7 +1137,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert!(index.mods.is_empty());
     }
 
@@ -1116,7 +1167,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert!(index.mods.is_empty());
         assert!(index.profiles[0].mod_order.is_empty());
         assert!(index.profiles[0].enabled_mods.is_empty());
@@ -1149,7 +1204,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.mods.len(), 1);
         assert_eq!(index.mods[0].id, "valid");
         assert_eq!(index.profiles[0].mod_order, vec!["valid"]);
@@ -1186,7 +1245,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert!(index.mods.is_empty());
         assert!(index.profiles[0].mod_order.is_empty());
         assert!(index.profiles[0].enabled_mods.is_empty());
@@ -1220,7 +1283,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.profiles[0].mod_order, vec!["mod-a", "mod-b"]);
         // enabled_mods should be unchanged — missing mods are added disabled
         assert_eq!(index.profiles[0].enabled_mods, vec!["mod-a"]);
@@ -1251,7 +1318,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.profiles[0].mod_order, vec!["mod-a", "mod-b"]);
         assert_eq!(index.profiles[1].mod_order, vec!["mod-a", "mod-b"]);
     }
@@ -1280,7 +1351,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.profiles[0].mod_order, vec!["mod-a"]);
         assert_eq!(index.profiles[0].enabled_mods, vec!["mod-a"]);
     }
@@ -1318,7 +1393,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.mods.len(), 2);
 
         // Profile 1: orphan removed, mod-b added
@@ -1346,7 +1425,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(!reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
     }
 
     #[test]
@@ -1374,7 +1457,7 @@ mod tests {
         save_library_index(dir.path(), &index).unwrap();
 
         let mut loaded = load_library_index(dir.path()).unwrap();
-        let reconciled = reconcile_library_index(dir.path(), &mut loaded);
+        let reconciled = reconcile_library_index(dir.path(), &mut loaded, &mut Vec::new());
         assert!(reconciled);
         assert!(loaded.mods.is_empty());
         assert!(loaded.profiles[0].mod_order.is_empty());
@@ -1425,7 +1508,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.mods.len(), 1);
         assert_eq!(index.mods[0].format, ModArchiveFormat::Fantome);
         assert_eq!(index.profiles[0].mod_order.len(), 1);
@@ -1460,7 +1547,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(!reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert_eq!(index.mods.len(), 1);
     }
 
@@ -1487,7 +1578,11 @@ mod tests {
         };
 
         // Should not crash, the corrupt file is cleaned up to prevent retry loops
-        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(!reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
         assert!(index.mods.is_empty());
         assert!(!archives_dir.join("corrupt.fantome").exists());
     }
@@ -1528,7 +1623,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(reconcile_library_index(dir.path(), &mut index));
+        assert!(reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
 
         // Metadata should have been re-extracted with real data
         let config_content = fs::read_to_string(&config_path).unwrap();
@@ -1565,7 +1664,11 @@ mod tests {
             folder_order: vec![ROOT_FOLDER_ID.to_string()],
         };
 
-        assert!(!reconcile_library_index(dir.path(), &mut index));
+        assert!(!reconcile_library_index(
+            dir.path(),
+            &mut index,
+            &mut Vec::new()
+        ));
     }
 
     #[test]
@@ -1641,7 +1744,7 @@ mod tests {
         save_library_index(dir.path(), &index).unwrap();
 
         let mut loaded = load_library_index(dir.path()).unwrap();
-        let reconciled = reconcile_library_index(dir.path(), &mut loaded);
+        let reconciled = reconcile_library_index(dir.path(), &mut loaded, &mut Vec::new());
         assert!(!reconciled);
         assert_eq!(loaded.mods.len(), 1);
         assert_eq!(loaded.profiles[0].mod_order, vec!["mod-a"]);

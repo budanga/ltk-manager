@@ -32,3 +32,4 @@ export * from "./SortableModCard";
 export * from "./SortableModList";
 export * from "./SortDropdown";
 export * from "./UnifiedDndGrid";
+export * from "./WadCountBadge";

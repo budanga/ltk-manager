@@ -64,6 +64,9 @@ fn main() {
             commands::get_mod_thumbnail,
             commands::get_storage_directory,
             commands::reorder_mods,
+            commands::get_mod_wad_report,
+            commands::get_all_mod_wad_reports,
+            commands::analyze_mod_wads,
             // Folders
             commands::get_folders,
             commands::get_folder_order,
