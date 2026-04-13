@@ -46,6 +46,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             // App
             commands::get_app_info,
+            commands::get_platform_support,
             // Settings
             commands::get_settings,
             commands::save_settings,

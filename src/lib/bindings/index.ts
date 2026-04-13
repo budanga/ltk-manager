@@ -32,6 +32,7 @@ export type { PackResult } from "./PackResult";
 export type { PatcherConfig } from "./PatcherConfig";
 export type { PatcherPhase } from "./PatcherPhase";
 export type { PatcherStatus } from "./PatcherStatus";
+export type { PlatformSupport } from "./PlatformSupport";
 export type { Profile } from "./Profile";
 export type { ProfileSlug } from "./ProfileSlug";
 export type { SaveProjectConfigArgs } from "./SaveProjectConfigArgs";

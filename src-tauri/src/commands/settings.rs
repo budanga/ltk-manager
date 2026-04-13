@@ -66,8 +66,15 @@ fn auto_detect_league_path_inner() -> Option<PathBuf> {
 /// Validate a League installation path.
 #[tauri::command]
 pub fn validate_league_path(path: PathBuf) -> IpcResult<bool> {
-    let exe_path = path.join("Game").join("League of Legends.exe");
-    IpcResult::ok(exe_path.exists())
+    let valid = if cfg!(target_os = "macos") {
+        // Path points to the .app bundle (e.g. /Applications/League of Legends.app)
+        path.join("Contents").join("LoL").join("Game").exists()
+            // Path points to the LoL root inside the bundle
+            || path.join("Game").join("League of Legends.app").exists()
+    } else {
+        path.join("Game").join("League of Legends.exe").exists()
+    };
+    IpcResult::ok(valid)
 }
 
 /// Check if initial setup is required (league path not configured).

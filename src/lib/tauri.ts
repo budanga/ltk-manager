@@ -18,6 +18,7 @@ import type {
   PackResult,
   PatcherConfig,
   PatcherStatus,
+  PlatformSupport,
   Profile,
   SaveProjectConfigArgs,
   Settings,
@@ -73,6 +74,7 @@ export type DeepLinkBlockedPayload = {
 // API functions
 export const api = {
   getAppInfo: () => invokeResult<AppInfo>("get_app_info"),
+  getPlatformSupport: () => invokeResult<PlatformSupport>("get_platform_support"),
 
   // Settings
   getSettings: () => invokeResult<Settings>("get_settings"),
