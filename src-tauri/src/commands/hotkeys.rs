@@ -444,13 +444,26 @@ fn try_lcu_reconnect_once(client: &reqwest::blocking::Client, lockfile: &Lockfil
     false
 }
 
-/// Kill the League of Legends process via taskkill.
+/// Kill the League of Legends game process.
 fn kill_league_process() {
     tracing::info!("Killing League of Legends process");
-    match Command::new("taskkill")
+
+    #[cfg(target_os = "windows")]
+    let result = Command::new("taskkill")
         .args(["/F", "/IM", "League of Legends.exe"])
-        .spawn()
-    {
+        .spawn();
+
+    #[cfg(target_os = "macos")]
+    let result = Command::new("pkill")
+        .args(["-f", "League of Legends"])
+        .spawn();
+
+    #[cfg(target_os = "linux")]
+    let result = Command::new("pkill")
+        .args(["-f", "League of Legends"])
+        .spawn();
+
+    match result {
         Ok(mut child) => {
             let timeout = std::time::Duration::from_secs(3);
             let start = std::time::Instant::now();
@@ -459,20 +472,20 @@ fn kill_league_process() {
                     Ok(Some(_)) => break,
                     Ok(None) => {
                         if start.elapsed() > timeout {
-                            tracing::warn!("taskkill timed out");
+                            tracing::warn!("kill command timed out");
                             break;
                         }
                         std::thread::sleep(std::time::Duration::from_millis(100));
                     }
                     Err(e) => {
-                        tracing::warn!("Error waiting for taskkill: {}", e);
+                        tracing::warn!("Error waiting for kill command: {}", e);
                         break;
                     }
                 }
             }
         }
         Err(e) => {
-            tracing::warn!("Failed to spawn taskkill: {}", e);
+            tracing::warn!("Failed to spawn kill command: {}", e);
         }
     }
 }
