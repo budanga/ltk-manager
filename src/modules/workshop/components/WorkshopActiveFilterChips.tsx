@@ -1,9 +1,9 @@
 import { X } from "lucide-react";
 
-import { getMapLabel, getTagLabel } from "@/modules/library/utils/labels";
-import { useHasActiveFilters, useLibraryFilterStore } from "@/stores";
+import { getMapLabel, getTagLabel } from "@/modules/library";
+import { useHasActiveWorkshopFilters, useWorkshopFilterStore } from "@/stores";
 
-export function ActiveFilterChips() {
+export function WorkshopActiveFilterChips() {
   const {
     selectedTags,
     selectedChampions,
@@ -12,8 +12,8 @@ export function ActiveFilterChips() {
     toggleChampion,
     toggleMap,
     clearFilters,
-  } = useLibraryFilterStore();
-  const hasActive = useHasActiveFilters();
+  } = useWorkshopFilterStore();
+  const hasActive = useHasActiveWorkshopFilters();
 
   if (!hasActive) return null;
 

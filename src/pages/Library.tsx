@@ -7,7 +7,6 @@ import { api } from "@/lib/tauri";
 import {
   checkModForSkinhack,
   DragDropOverlay,
-  FilterBar,
   ImportProgressDialog,
   LibraryContent,
   LibraryToolbar,
@@ -19,6 +18,7 @@ import {
 import { MigrationBanner, MigrationWizardDialog } from "@/modules/migration";
 import {
   PatcherUnsupported,
+  StatusBar,
   usePatcherStatus,
   useStartPatcher,
   useStopPatcher,
@@ -143,8 +143,9 @@ export function Library({ folderId }: LibraryProps = {}) {
         hasEnabledMods={hasEnabledMods}
         isLoading={isLoading}
         isPatcherActive={isPatcherActive}
+        filterOptions={filterOptions}
       />
-      <FilterBar filterOptions={filterOptions} />
+      <StatusBar />
       <LibraryContent
         mods={mods}
         searchQuery={searchQuery}

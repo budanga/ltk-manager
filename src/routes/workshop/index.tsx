@@ -18,7 +18,6 @@ import {
   useFilteredProjects,
   useWorkshopFilterOptions,
   useWorkshopProjects,
-  WorkshopFilterBar,
   WorkshopToolbar,
 } from "@/modules/workshop";
 import {
@@ -64,8 +63,7 @@ function WorkshopIndex() {
 
   return (
     <div className="flex h-full flex-col">
-      <WorkshopToolbar />
-      <WorkshopFilterBar filterOptions={filterOptions} />
+      <WorkshopToolbar filterOptions={filterOptions} />
       <div className="flex-1 overflow-auto p-6">{renderContent()}</div>
       <PackDialog />
       <BulkPackDialog />

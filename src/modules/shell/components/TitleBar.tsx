@@ -15,9 +15,10 @@ import {
 import { useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
-import { IconButton, Tooltip, useToast } from "@/components";
+import { IconButton, Separator, Tooltip, useToast } from "@/components";
 import { usePlatformSupport } from "@/hooks";
 import { api, type AppInfo, unwrap } from "@/lib/tauri";
+import { ProfileSelector } from "@/modules/library";
 
 import { NotificationCenter } from "./NotificationCenter";
 
@@ -153,6 +154,10 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
             <NavLink key={item.to} {...item} />
           ))}
         </nav>
+
+        <Separator orientation="vertical" />
+
+        <ProfileSelector />
       </div>
 
       {/* Right: Notifications, Settings, and window controls */}
@@ -213,7 +218,7 @@ export function TitleBar({ title = "LTK Manager", appInfo }: TitleBarProps) {
 
         {!isMacOS && (
           <>
-            <div className="mx-2 h-5 w-px bg-surface-600" />
+            <Separator orientation="vertical" />
 
             <IconButton
               icon={<Minus className="h-3.5 w-3.5" />}
