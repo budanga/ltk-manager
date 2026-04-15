@@ -5,6 +5,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useRef } from "react";
 
 import type { InstalledMod, LibraryFolder } from "@/lib/tauri";
 import { useUnifiedDnd } from "@/modules/library/api";
@@ -40,6 +41,10 @@ export function UnifiedDndGrid({
   onReorder,
   onViewDetails,
 }: UnifiedDndGridProps) {
+  const hasMountedRef = useRef(false);
+  const stagger = !hasMountedRef.current ? " stagger-enter" : "";
+  hasMountedRef.current = true;
+
   if (dndDisabled) {
     return (
       <StaticGrid
@@ -48,6 +53,7 @@ export function UnifiedDndGrid({
         modsByFolder={modsByFolder}
         viewMode={viewMode}
         onViewDetails={onViewDetails}
+        staggerClass={stagger}
       />
     );
   }
@@ -70,11 +76,19 @@ interface StaticGridProps {
   modsByFolder: Map<string, InstalledMod[]>;
   viewMode: "grid" | "list";
   onViewDetails?: (mod: InstalledMod) => void;
+  staggerClass?: string;
 }
 
-function StaticGrid({ folders, rootMods, modsByFolder, viewMode, onViewDetails }: StaticGridProps) {
+function StaticGrid({
+  folders,
+  rootMods,
+  modsByFolder,
+  viewMode,
+  onViewDetails,
+  staggerClass = "",
+}: StaticGridProps) {
   return (
-    <div className={`${gridClass(viewMode)} stagger-enter`}>
+    <div className={`${gridClass(viewMode)}${staggerClass}`}>
       {folders.map((folder) => {
         const folderMods = modsByFolder.get(folder.id) ?? [];
         if (viewMode === "list") {

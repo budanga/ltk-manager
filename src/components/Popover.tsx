@@ -184,7 +184,7 @@ export const PopoverClose = forwardRef<HTMLButtonElement, PopoverCloseProps>(
       <BasePopover.Close
         ref={ref}
         className={twMerge(
-          "inline-flex items-center justify-center rounded-md",
+          "inline-flex cursor-pointer items-center justify-center rounded-md",
           "text-surface-200 transition-colors hover:bg-surface-700 active:bg-surface-800",
           className,
         )}

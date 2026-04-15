@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
-import { Button, Popover, useToast } from "@/components";
+import { Button, Popover, TooltipPrimitives as Tooltip, useToast } from "@/components";
 import type { Profile } from "@/lib/tauri";
 import { useActiveProfile, useProfiles, useSwitchProfile } from "@/modules/library/api";
 
@@ -33,20 +33,42 @@ export function ProfileSelector() {
   return (
     <>
       <Popover.Root open={isOpen} onOpenChange={setIsOpen}>
-        <Popover.Trigger
-          render={
-            <Button
-              variant="default"
-              size="sm"
-              className="group"
-              right={
-                <ChevronDown className="h-4 w-4 text-surface-400 transition-transform group-data-[popup-open]:rotate-180" />
+        <Tooltip.Provider delay={1000}>
+          <Tooltip.Root>
+            <Tooltip.Trigger
+              render={
+                <Popover.Trigger
+                  render={
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="group"
+                      right={
+                        <ChevronDown className="h-4 w-4 text-surface-400 transition-transform group-data-popup-open:rotate-180" />
+                      }
+                    />
+                  }
+                >
+                  {activeProfile?.name || "Default"}
+                </Popover.Trigger>
               }
             />
-          }
-        >
-          {activeProfile?.name || "Default"}
-        </Popover.Trigger>
+            {!isOpen && (
+              <Tooltip.Portal>
+                <Tooltip.Positioner side="bottom" sideOffset={8}>
+                  <Tooltip.Popup className="max-w-[240px]">
+                    <Tooltip.Arrow />
+                    <p className="text-xs leading-relaxed text-surface-300">
+                      <span className="font-medium text-surface-100">Profiles</span> let you save
+                      and switch between different sets of enabled mods. Create multiple profiles
+                      for different playstyles or configurations.
+                    </p>
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            )}
+          </Tooltip.Root>
+        </Tooltip.Provider>
 
         <Popover.Portal>
           <Popover.Positioner side="bottom" align="start">

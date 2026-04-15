@@ -2,19 +2,15 @@ import { Filter, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Checkbox, IconButton, Popover, Separator, Tooltip } from "@/components";
-import type { FilterOptions } from "@/modules/library/api";
-import {
-  getMapLabel,
-  getTagLabel,
-  WELL_KNOWN_MAPS,
-  WELL_KNOWN_TAGS,
-} from "@/modules/library/utils/labels";
-import { useHasActiveFilters, useLibraryFilterStore } from "@/stores";
+import { getMapLabel, getTagLabel, WELL_KNOWN_MAPS, WELL_KNOWN_TAGS } from "@/modules/library";
+import { useHasActiveWorkshopFilters, useWorkshopFilterStore } from "@/stores";
 
-function mergeUnique(wellKnown: string[], fromMods: string[]): string[] {
+import type { WorkshopFilterOptions } from "../api/useFilterOptions";
+
+function mergeUnique(wellKnown: string[], fromProjects: string[]): string[] {
   const seen = new Set(wellKnown);
   const result = [...wellKnown];
-  for (const value of fromMods) {
+  for (const value of fromProjects) {
     if (!seen.has(value)) {
       seen.add(value);
       result.push(value);
@@ -23,11 +19,11 @@ function mergeUnique(wellKnown: string[], fromMods: string[]): string[] {
   return result;
 }
 
-interface FilterPopoverProps {
-  filterOptions: FilterOptions;
+interface WorkshopFilterPopoverProps {
+  filterOptions: WorkshopFilterOptions;
 }
 
-export function FilterPopover({ filterOptions }: FilterPopoverProps) {
+export function WorkshopFilterPopover({ filterOptions }: WorkshopFilterPopoverProps) {
   const {
     selectedTags,
     selectedChampions,
@@ -36,8 +32,8 @@ export function FilterPopover({ filterOptions }: FilterPopoverProps) {
     toggleChampion,
     toggleMap,
     clearFilters,
-  } = useLibraryFilterStore();
-  const hasActive = useHasActiveFilters();
+  } = useWorkshopFilterStore();
+  const hasActive = useHasActiveWorkshopFilters();
   const [champSearch, setChampSearch] = useState("");
 
   const tags = useMemo(
@@ -57,7 +53,7 @@ export function FilterPopover({ filterOptions }: FilterPopoverProps) {
 
   return (
     <Popover.Root>
-      <Tooltip content="Filter mods">
+      <Tooltip content="Filter projects">
         <Popover.Trigger
           render={
             <IconButton
