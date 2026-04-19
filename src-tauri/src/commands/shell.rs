@@ -21,8 +21,9 @@ fn reveal_in_explorer_inner(path: &str) -> AppResult<()> {
 
     #[cfg(target_os = "windows")]
     {
+        let dir_str = dir.to_string_lossy().replace('/', "\\");
         std::process::Command::new("explorer")
-            .arg(dir)
+            .arg(dir_str)
             .spawn()
             .map_err(|e| AppError::Other(format!("Failed to open explorer: {}", e)))?;
     }
