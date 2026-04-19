@@ -66,7 +66,7 @@ function ProjectOverview() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 pb-20">
+    <div className="mx-auto max-w-6xl space-y-5 p-6 pb-20">
       <SectionCard title="Mod Details" icon={<Package className="h-4 w-4" />}>
         <div className="flex flex-col gap-6 md:flex-row md:gap-8">
           <ThumbnailSection project={project} />
