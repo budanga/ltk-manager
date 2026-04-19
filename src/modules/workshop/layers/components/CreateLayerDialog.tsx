@@ -1,3 +1,4 @@
+import { FolderClosed } from "lucide-react";
 import { useRef } from "react";
 import { z } from "zod";
 
@@ -110,7 +111,10 @@ export function CreateLayerDialog({
                 {(field) => (
                   <Field.Root>
                     <Field.Label>
-                      <span className="text-xs text-surface-400">Layer Slug</span>
+                      <span className="text-xs text-surface-400">
+                        Layer Slug{" "}
+                        <span className="font-normal text-surface-500">(folder name on disk)</span>
+                      </span>
                     </Field.Label>
                     <Field.Control
                       value={field.state.value}
@@ -120,11 +124,18 @@ export function CreateLayerDialog({
                       onBlur={field.handleBlur}
                       hasError={field.state.meta.errors.length > 0}
                       placeholder="high-res-textures"
-                      className="text-sm text-surface-300"
+                      className="font-mono text-sm text-surface-300"
                     />
                     <Field.Description>
-                      <span className="text-xs">
-                        Lowercase letters, numbers, and hyphens. This will be the folder name.
+                      <span className="flex items-start gap-1.5 text-xs">
+                        <FolderClosed className="mt-0.5 h-3 w-3 shrink-0 text-surface-500" />
+                        <span>
+                          Saved to disk as{" "}
+                          <code className="rounded bg-surface-800 px-1 py-0.5 font-mono text-[11px] text-surface-300">
+                            content/{field.state.value || "layer-slug"}
+                          </code>
+                          . Lowercase letters, numbers, and hyphens only.
+                        </span>
                       </span>
                     </Field.Description>
                     {field.state.meta.errors.length > 0 && (
