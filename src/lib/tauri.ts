@@ -4,6 +4,7 @@ import type {
   AppError,
   AppInfo,
   BulkInstallResult,
+  ContentTree,
   CreateProjectArgs,
   CslolModInfo,
   FantomePeekResult,
@@ -170,6 +171,8 @@ export const api = {
     invokeResult<WorkshopProject>("create_workshop_project", { args }),
   getWorkshopProject: (projectPath: string) =>
     invokeResult<WorkshopProject>("get_workshop_project", { projectPath }),
+  getProjectContentTree: (projectPath: string) =>
+    invokeResult<ContentTree>("get_project_content_tree", { projectPath }),
   saveProjectConfig: (args: SaveProjectConfigArgs) =>
     invokeResult<WorkshopProject>("save_project_config", { args }),
   renameWorkshopProject: (projectPath: string, newName: string) =>

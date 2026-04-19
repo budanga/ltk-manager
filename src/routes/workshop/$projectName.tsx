@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FolderTree, Globe, Package } from "lucide-react";
 
 import { Button, NavTabs } from "@/components";
 import {
@@ -38,10 +38,27 @@ function ProjectDetailLayout() {
     );
   }
 
+  const tabIconClass = "h-3.5 w-3.5";
   const tabs = [
-    { to: "/workshop/$projectName", params: { projectName }, label: "Overview", exact: true },
-    { to: "/workshop/$projectName/strings", params: { projectName }, label: "Strings" },
-    { to: "/workshop/$projectName/layers", params: { projectName }, label: "Layers" },
+    {
+      to: "/workshop/$projectName",
+      params: { projectName },
+      label: "Overview",
+      icon: <Package className={tabIconClass} />,
+      exact: true,
+    },
+    {
+      to: "/workshop/$projectName/content",
+      params: { projectName },
+      label: "Content",
+      icon: <FolderTree className={tabIconClass} />,
+    },
+    {
+      to: "/workshop/$projectName/strings",
+      params: { projectName },
+      label: "Strings",
+      icon: <Globe className={tabIconClass} />,
+    },
   ];
 
   return (
@@ -51,7 +68,7 @@ function ProjectDetailLayout() {
 
         <NavTabs tabs={tabs} />
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto">
           <Outlet />
         </div>
       </div>

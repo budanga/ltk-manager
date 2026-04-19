@@ -1,9 +1,9 @@
 use crate::error::{AppResult, IpcResult, MutexResultExt};
 use crate::state::SettingsState;
 use crate::workshop::{
-    CreateProjectArgs, FantomePeekResult, ImportFantomeArgs, ImportGitRepoArgs, PackProjectArgs,
-    PackResult, SaveProjectConfigArgs, ValidationResult, WorkshopLayerInfo, WorkshopProject,
-    WorkshopState,
+    ContentTree, CreateProjectArgs, FantomePeekResult, ImportFantomeArgs, ImportGitRepoArgs,
+    PackProjectArgs, PackResult, SaveProjectConfigArgs, ValidationResult, WorkshopLayerInfo,
+    WorkshopProject, WorkshopState,
 };
 use std::collections::HashMap;
 use tauri::State;
@@ -39,6 +39,14 @@ pub fn get_workshop_project(
     workshop: State<WorkshopState>,
 ) -> IpcResult<WorkshopProject> {
     workshop.0.get_project(&project_path).into()
+}
+
+#[tauri::command]
+pub fn get_project_content_tree(
+    project_path: String,
+    workshop: State<WorkshopState>,
+) -> IpcResult<ContentTree> {
+    workshop.0.get_project_content_tree(&project_path).into()
 }
 
 #[tauri::command]

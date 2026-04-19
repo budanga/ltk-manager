@@ -11,6 +11,7 @@ export { useImportFromModpkg } from "./useImportFromModpkg";
 export { usePackProject } from "./usePackProject";
 export { usePeekFantome } from "./usePeekFantome";
 export { useProjectActions } from "./useProjectActions";
+export { projectContentTreeOptions, useProjectContentTree } from "./useProjectContentTree";
 export { projectThumbnailOptions, useProjectThumbnail } from "./useProjectThumbnail";
 export { useRemoveProjectThumbnail } from "./useRemoveProjectThumbnail";
 export { useRenameProject } from "./useRenameProject";

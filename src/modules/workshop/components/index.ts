@@ -1,5 +1,6 @@
 export { BulkDeleteDialog } from "./BulkDeleteDialog";
 export { BulkPackDialog } from "./BulkPackDialog";
+export { ContentBrowser } from "./ContentBrowser";
 export { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 export {
   ErrorState,

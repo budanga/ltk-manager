@@ -2851,6 +2851,7 @@ dependencies = [
  "ts-rs",
  "url",
  "uuid",
+ "walkdir",
  "webp",
  "xxhash-rust",
  "zip 2.4.2",
@@ -2883,6 +2884,7 @@ version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e1fecb09d18694be47efe5175c6ad5a4ec460ddeca28d42b746d9e8c5a6dd03"
 dependencies = [
+ "serde",
  "strum",
 ]
 
