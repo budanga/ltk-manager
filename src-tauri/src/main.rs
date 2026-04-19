@@ -106,6 +106,7 @@ fn main() {
             commands::get_workshop_projects,
             commands::create_workshop_project,
             commands::get_workshop_project,
+            commands::get_project_content_tree,
             commands::save_project_config,
             commands::rename_workshop_project,
             commands::delete_workshop_project,

@@ -66,7 +66,7 @@ function ProjectOverview() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5 pb-20">
+    <div className="mx-auto max-w-6xl space-y-5 p-6 pb-20">
       <SectionCard title="Mod Details" icon={<Package className="h-4 w-4" />}>
         <div className="flex flex-col gap-6 md:flex-row md:gap-8">
           <ThumbnailSection project={project} />
@@ -152,22 +152,26 @@ function ProjectOverview() {
         </div>
       </SectionCard>
 
-      <CategorizationSection
-        selectedTags={selectedTags}
-        onTagsChange={setSelectedTags}
-        selectedMaps={selectedMaps}
-        onMapsChange={setSelectedMaps}
-        championsText={championsText}
-        onChampionsChange={setChampionsText}
-      />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <CategorizationSection
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          selectedMaps={selectedMaps}
+          onMapsChange={setSelectedMaps}
+          championsText={championsText}
+          onChampionsChange={setChampionsText}
+        />
 
-      <AuthorsSection
-        authors={authors}
-        authorProfiles={settings?.authorProfiles}
-        onAdd={(initial) => setAuthors((prev) => appendAuthor(prev, initial))}
-        onRemove={(i) => setAuthors((prev) => removeAuthorAt(prev, i))}
-        onUpdate={(i, field, value) => setAuthors((prev) => updateAuthorAt(prev, i, field, value))}
-      />
+        <AuthorsSection
+          authors={authors}
+          authorProfiles={settings?.authorProfiles}
+          onAdd={(initial) => setAuthors((prev) => appendAuthor(prev, initial))}
+          onRemove={(i) => setAuthors((prev) => removeAuthorAt(prev, i))}
+          onUpdate={(i, field, value) =>
+            setAuthors((prev) => updateAuthorAt(prev, i, field, value))
+          }
+        />
+      </div>
 
       <ProjectInfoSection
         project={project}
@@ -177,7 +181,7 @@ function ProjectOverview() {
       />
 
       <div className="fixed right-0 bottom-0 left-0 z-10 border-t border-surface-700 bg-surface-900/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-end px-6 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-end px-6 py-3">
           <Button
             variant="filled"
             left={<Save className="h-4 w-4" />}

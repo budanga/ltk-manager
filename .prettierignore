@@ -17,3 +17,6 @@ LICENSE-CSLOL.md
 
 # Tauri
 src-tauri/
+
+# Spec-kit metadata
+.specify/

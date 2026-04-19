@@ -281,3 +281,10 @@ Use `useReducedMotion()` hook from `@/hooks` for component-level checks. Returns
 
 - **Windows:** `%APPDATA%\dev.leaguetoolkit.manager\logs\ltk-manager.log`
 - **Linux/macOS:** `~/.local/share/dev.leaguetoolkit.manager/logs/ltk-manager.log`
+
+<!-- SPECKIT START -->
+
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+
+<!-- SPECKIT END -->

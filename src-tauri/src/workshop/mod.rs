@@ -1,6 +1,9 @@
+mod content;
 mod layers;
 mod packing;
 mod projects;
+
+pub use content::ContentTree;
 
 use crate::error::{AppError, AppResult};
 use crate::state::Settings;

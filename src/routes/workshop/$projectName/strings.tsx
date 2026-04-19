@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Globe, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { Button, Field, IconButton, Tabs, Tooltip, useToast } from "@/components";
+import { AlertBox, Button, Field, IconButton, Tabs, Tooltip, useToast } from "@/components";
 import type { WorkshopLayer } from "@/lib/tauri";
 import { useProjectContext, useSaveStringOverrides } from "@/modules/workshop";
 
@@ -165,13 +165,34 @@ function ProjectStrings() {
   const overrideCount = entries.length;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div>
         <h2 className="text-base font-semibold text-surface-100">String Overrides</h2>
         <p className="mt-1 text-sm text-surface-400">
           Override in-game text strings per locale and layer.
         </p>
       </div>
+
+      <AlertBox variant="warning" title="String overrides are not applied yet">
+        <p className="mt-1">
+          Once this ships, overrides you configure here will be applied dynamically during overlay
+          building — no repacking the game&rsquo;s stringtable WAD, so your mod won&rsquo;t break
+          every patch. Right now the feature is blocked by work in the underlying library; you can
+          edit entries but they won&rsquo;t take effect in-game.
+        </p>
+        <p className="mt-2">
+          Track progress on{" "}
+          <a
+            href="https://github.com/LeagueToolkit/ltk-manager/issues/123"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent-400 underline-offset-2 transition-colors hover:text-accent-300 hover:underline"
+          >
+            issue #123
+          </a>
+          .
+        </p>
+      </AlertBox>
 
       {/* Layer tabs */}
       {layers.length > 1 && (
