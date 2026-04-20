@@ -1,20 +1,73 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, EllipsisVertical, FolderOpen, Package, Play, Trash2 } from "lucide-react";
+import { match } from "ts-pattern";
 
 import { Button, IconButton, Menu, Tooltip } from "@/components";
 import type { WorkshopProject } from "@/lib/tauri";
-import { usePatcherStatus } from "@/modules/patcher";
+import { useStopPatcher } from "@/modules/patcher";
 
 import { useProjectActions } from "../api/useProjectActions";
+import { useWorkshopTestState } from "../api/useWorkshopTestState";
 
 interface ProjectHeaderProps {
   project: WorkshopProject;
 }
 
 export function ProjectHeader({ project }: ProjectHeaderProps) {
-  const { data: patcherStatus } = usePatcherStatus();
-  const isPatcherActive = patcherStatus?.running ?? false;
+  const testState = useWorkshopTestState(project);
+  const stopPatcher = useStopPatcher();
   const actions = useProjectActions(project);
+
+  const testButton = match(testState)
+    .with({ kind: "idle" }, () => (
+      <Button
+        variant="outline"
+        size="sm"
+        left={<Play className="h-4 w-4" />}
+        onClick={actions.handleTestProject}
+      >
+        Test
+      </Button>
+    ))
+    .with({ kind: "building-this" }, () => (
+      <Button variant="outline" size="sm" loading disabled>
+        Building…
+      </Button>
+    ))
+    .with({ kind: "running-this" }, () => (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => stopPatcher.mutate()}
+        loading={stopPatcher.isPending}
+        left={
+          !stopPatcher.isPending && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+          )
+        }
+        className="border-green-500/40 bg-green-500/10 text-green-400 hover:border-green-500/60 hover:bg-green-500/20"
+      >
+        {stopPatcher.isPending ? "Stopping…" : "Stop Test"}
+      </Button>
+    ))
+    .with({ kind: "building-other" }, { kind: "running-other" }, ({ otherLabel }) => (
+      <Tooltip content={`Testing "${otherLabel}" — stop it first`}>
+        <Button variant="outline" size="sm" disabled left={<Play className="h-4 w-4" />}>
+          Test
+        </Button>
+      </Tooltip>
+    ))
+    .with({ kind: "building-library" }, { kind: "running-library" }, () => (
+      <Tooltip content="Patcher is running — stop it first">
+        <Button variant="outline" size="sm" disabled left={<Play className="h-4 w-4" />}>
+          Test
+        </Button>
+      </Tooltip>
+    ))
+    .exhaustive();
 
   return (
     <div className="flex items-center gap-3 border-b border-surface-700 px-6 py-3">
@@ -39,15 +92,7 @@ export function ProjectHeader({ project }: ProjectHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          left={<Play className="h-4 w-4" />}
-          onClick={actions.handleTestProject}
-          disabled={isPatcherActive}
-        >
-          Test
-        </Button>
+        {testButton}
         <Button
           variant="outline"
           size="sm"
