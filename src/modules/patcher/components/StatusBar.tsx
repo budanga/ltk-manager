@@ -1,5 +1,4 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef } from "react";
 
 import { Progress } from "@/components";
 import type { OverlayProgress } from "@/lib/tauri";
@@ -26,22 +25,8 @@ export function StatusBar() {
   useHotkeyEvents();
 
   const testingProjects = usePatcherSessionStore((s) => s.testingProjects);
-  const clearTestingProjects = usePatcherSessionStore((s) => s.clearTestingProjects);
 
   const isBuilding = patcherStatus?.phase === "building";
-  const isRunning = patcherStatus?.running ?? false;
-  const isIdle = !isRunning && !isBuilding;
-
-  const wasActiveRef = useRef(false);
-
-  useEffect(() => {
-    if (!isIdle) {
-      wasActiveRef.current = true;
-    } else if (wasActiveRef.current && testingProjects.length > 0) {
-      clearTestingProjects();
-      wasActiveRef.current = false;
-    }
-  }, [isIdle, testingProjects, clearTestingProjects]);
 
   if (!isBuilding) return null;
 

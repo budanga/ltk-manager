@@ -7,6 +7,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useAutoStartPatcher, useReducedMotion } from "@/hooks";
 import { ProtocolInstallDialog, useDeepLinkListener } from "@/modules/deep-link";
 import { useLibraryWatcher } from "@/modules/library";
+import { PatcherStatusPill } from "@/modules/patcher";
 import { useAppInfo, useCheckSetupRequired, useSettings } from "@/modules/settings";
 import { DevConsole, TitleBar, useDevLogStream } from "@/modules/shell";
 import { UpdateNotification, useUpdateCheck } from "@/modules/updater";
@@ -83,6 +84,7 @@ function RootLayout() {
         </div>
       </main>
       <ProtocolInstallDialog />
+      <PatcherStatusPill />
       {import.meta.env.DEV && <DevConsole />}
     </div>
   );

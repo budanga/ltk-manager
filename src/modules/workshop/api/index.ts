@@ -22,3 +22,4 @@ export { useTestProjects } from "./useTestProject";
 export { useValidateProject, validateProjectOptions } from "./useValidateProject";
 export { useWorkshopProject, workshopProjectOptions } from "./useWorkshopProject";
 export { useWorkshopProjects, workshopProjectsOptions } from "./useWorkshopProjects";
+export { useWorkshopTestState, type WorkshopTestState } from "./useWorkshopTestState";

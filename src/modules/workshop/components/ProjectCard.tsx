@@ -1,20 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
-import { EllipsisVertical, FolderOpen, Package, Pencil, Play, Trash2 } from "lucide-react";
-import { useMemo } from "react";
+import { EllipsisVertical, FolderOpen, Package, Pencil, Play, Trash2, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
+import { match } from "ts-pattern";
 
-import { Button, Checkbox, IconButton, Menu } from "@/components";
+import { Button, Checkbox, IconButton, Menu, Tooltip } from "@/components";
 import type { WorkshopProject } from "@/lib/tauri";
 import { getTagLabel } from "@/modules/library";
-import { usePatcherStatus } from "@/modules/patcher";
-import {
-  usePatcherSessionStore,
-  useWorkshopDialogsStore,
-  useWorkshopSelectionStore,
-} from "@/stores";
+import { useStopPatcher } from "@/modules/patcher";
+import { useWorkshopDialogsStore, useWorkshopSelectionStore } from "@/stores";
 
 import { useProjectThumbnail } from "../api/useProjectThumbnail";
 import { useTestProjects } from "../api/useTestProject";
+import { useWorkshopTestState } from "../api/useWorkshopTestState";
 import type { ViewMode } from "./WorkshopToolbar";
 
 interface ProjectCardProps {
@@ -29,26 +27,25 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
   const selected = useWorkshopSelectionStore((s) => s.selectedPaths.has(project.path));
   const toggle = useWorkshopSelectionStore((s) => s.toggle);
 
-  const { data: patcherStatus } = usePatcherStatus();
-  const isPatcherActive = patcherStatus?.running ?? false;
+  const testState = useWorkshopTestState(project);
+  const stopPatcher = useStopPatcher();
+  const testProjects = useTestProjects();
 
-  const testingProjects = usePatcherSessionStore((s) => s.testingProjects);
-  const isTesting = useMemo(
-    () => testingProjects.some((p) => p.path === project.path),
-    [testingProjects, project.path],
-  );
+  const isPatcherActive = testState.kind !== "idle";
+  const isTestingThis = testState.kind === "building-this" || testState.kind === "running-this";
 
   const openPackDialog = useWorkshopDialogsStore((s) => s.openPackDialog);
   const openDeleteDialog = useWorkshopDialogsStore((s) => s.openDeleteDialog);
-
-  const testProjects = useTestProjects();
-  const isTestDisabled = isPatcherActive || testProjects.isPending;
 
   function handleTest() {
     testProjects.mutate(
       { projects: [{ path: project.path, displayName: project.displayName }] },
       { onError: (err) => console.error("Failed to test project:", err.message) },
     );
+  }
+
+  function handleStop() {
+    stopPatcher.mutate();
   }
 
   async function handleOpenLocation() {
@@ -59,7 +56,37 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
     }
   }
 
-  const listBorderClass = isTesting
+  const testButton = renderTestButton({
+    testState,
+    onTest: handleTest,
+    onStop: handleStop,
+    isStopping: stopPatcher.isPending,
+    isTesting: testProjects.isPending,
+  });
+
+  const testMenuItem = renderTestMenuItem({
+    testState,
+    onTest: handleTest,
+    onStop: handleStop,
+  });
+
+  const stopPill = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        handleStop();
+      }}
+      disabled={stopPatcher.isPending}
+      title="Stop test"
+      className="group/pill flex shrink-0 cursor-pointer items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Testing
+      <X className="h-3 w-3 opacity-60 group-hover/pill:opacity-100" />
+    </button>
+  );
+
+  const listBorderClass = isTestingThis
     ? "border-green-500/40"
     : selected
       ? "border-accent-500/40"
@@ -71,14 +98,14 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
         className={twMerge(
           "group flex cursor-pointer items-center gap-4 rounded-lg border bg-surface-900 p-4 transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out hover:-translate-y-px hover:border-surface-600 hover:shadow-md",
           listBorderClass,
-          isPatcherActive && !isTesting && "opacity-50",
+          isPatcherActive && !isTestingThis && "opacity-50",
         )}
         onClick={() => onEdit(project)}
       >
         <div onClick={(e) => e.stopPropagation()}>
           <Checkbox
             size="md"
-            checked={isPatcherActive ? isTesting : selected}
+            checked={isPatcherActive ? isTestingThis : selected}
             onCheckedChange={() => toggle(project.path)}
             disabled={isPatcherActive}
           />
@@ -110,22 +137,10 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
           <ProjectPills project={project} max={3} />
         </div>
 
-        {isTesting && (
-          <span className="shrink-0 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
-            Testing
-          </span>
-        )}
+        {isTestingThis && stopPill}
 
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="outline"
-            size="sm"
-            left={<Play className="h-4 w-4" />}
-            onClick={handleTest}
-            disabled={isTestDisabled}
-          >
-            Test
-          </Button>
+          {testButton}
           <Button
             variant="outline"
             size="sm"
@@ -150,13 +165,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
                   <Menu.Item icon={<Pencil className="h-4 w-4" />} onClick={() => onEdit(project)}>
                     Edit Project
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<Play className="h-4 w-4" />}
-                    onClick={handleTest}
-                    disabled={isTestDisabled}
-                  >
-                    Test
-                  </Menu.Item>
+                  {testMenuItem}
                   <Menu.Item
                     icon={<Package className="h-4 w-4" />}
                     onClick={() => openPackDialog(project)}
@@ -183,7 +192,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
     );
   }
 
-  const gridBorderClass = isTesting
+  const gridBorderClass = isTestingThis
     ? "border-green-500/40"
     : selected
       ? "border-accent-500/40"
@@ -194,7 +203,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
       className={twMerge(
         "group relative cursor-pointer rounded-xl border bg-surface-800 transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out hover:-translate-y-px hover:border-surface-400 hover:shadow-md",
         gridBorderClass,
-        isPatcherActive && !isTesting && "opacity-50",
+        isPatcherActive && !isTestingThis && "opacity-50",
       )}
       onClick={() => onEdit(project)}
     >
@@ -210,7 +219,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
       >
         <Checkbox
           size="md"
-          checked={isPatcherActive ? isTesting : selected}
+          checked={isPatcherActive ? isTestingThis : selected}
           onCheckedChange={() => toggle(project.path)}
           disabled={isPatcherActive}
         />
@@ -240,11 +249,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
             <span className="flex-1 truncate">
               {project.authors.length > 0 ? project.authors[0].name : "Unknown"}
             </span>
-            {isTesting && (
-              <span className="shrink-0 rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-400">
-                Testing
-              </span>
-            )}
+            {isTestingThis && stopPill}
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
@@ -258,13 +263,7 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
                   <Menu.Item icon={<Pencil className="h-4 w-4" />} onClick={() => onEdit(project)}>
                     Edit Project
                   </Menu.Item>
-                  <Menu.Item
-                    icon={<Play className="h-4 w-4" />}
-                    onClick={handleTest}
-                    disabled={isPatcherActive}
-                  >
-                    Test
-                  </Menu.Item>
+                  {testMenuItem}
                   <Menu.Item
                     icon={<Package className="h-4 w-4" />}
                     onClick={() => openPackDialog(project)}
@@ -290,6 +289,111 @@ export function ProjectCard({ project, viewMode, onEdit }: ProjectCardProps) {
       </div>
     </div>
   );
+}
+
+interface TestButtonArgs {
+  testState: ReturnType<typeof useWorkshopTestState>;
+  onTest: () => void;
+  onStop: () => void;
+  isStopping: boolean;
+  isTesting: boolean;
+}
+
+function renderTestButton({
+  testState,
+  onTest,
+  onStop,
+  isStopping,
+  isTesting,
+}: TestButtonArgs): ReactNode {
+  return match(testState)
+    .with({ kind: "idle" }, () => (
+      <Button
+        variant="outline"
+        size="sm"
+        left={<Play className="h-4 w-4" />}
+        onClick={onTest}
+        loading={isTesting}
+      >
+        Test
+      </Button>
+    ))
+    .with({ kind: "building-this" }, () => (
+      <Button variant="outline" size="sm" loading disabled>
+        Building…
+      </Button>
+    ))
+    .with({ kind: "running-this" }, () => (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onStop}
+        loading={isStopping}
+        left={
+          !isStopping && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+            </span>
+          )
+        }
+        className="border-green-500/40 bg-green-500/10 text-green-400 hover:border-green-500/60 hover:bg-green-500/20"
+      >
+        {isStopping ? "Stopping…" : "Stop Test"}
+      </Button>
+    ))
+    .with({ kind: "building-other" }, { kind: "running-other" }, ({ otherLabel }) => (
+      <Tooltip content={`Testing "${otherLabel}" — stop it first`}>
+        <Button variant="outline" size="sm" disabled left={<Play className="h-4 w-4" />}>
+          Test
+        </Button>
+      </Tooltip>
+    ))
+    .with({ kind: "building-library" }, { kind: "running-library" }, () => (
+      <Tooltip content="Patcher is running — stop it first">
+        <Button variant="outline" size="sm" disabled left={<Play className="h-4 w-4" />}>
+          Test
+        </Button>
+      </Tooltip>
+    ))
+    .exhaustive();
+}
+
+interface TestMenuItemArgs {
+  testState: ReturnType<typeof useWorkshopTestState>;
+  onTest: () => void;
+  onStop: () => void;
+}
+
+function renderTestMenuItem({ testState, onTest, onStop }: TestMenuItemArgs): ReactNode {
+  return match(testState)
+    .with({ kind: "idle" }, () => (
+      <Menu.Item icon={<Play className="h-4 w-4" />} onClick={onTest}>
+        Test
+      </Menu.Item>
+    ))
+    .with({ kind: "building-this" }, () => (
+      <Menu.Item icon={<Play className="h-4 w-4" />} disabled>
+        Building…
+      </Menu.Item>
+    ))
+    .with({ kind: "running-this" }, () => (
+      <Menu.Item icon={<Play className="h-4 w-4" />} onClick={onStop}>
+        Stop Test
+      </Menu.Item>
+    ))
+    .with(
+      { kind: "building-other" },
+      { kind: "running-other" },
+      { kind: "building-library" },
+      { kind: "running-library" },
+      () => (
+        <Menu.Item icon={<Play className="h-4 w-4" />} disabled>
+          Test
+        </Menu.Item>
+      ),
+    )
+    .exhaustive();
 }
 
 function ProjectPills({
