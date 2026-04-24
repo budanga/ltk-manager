@@ -16,6 +16,7 @@ mod overlay;
 pub mod patcher;
 mod setup;
 mod state;
+mod storage;
 mod tray;
 mod utils;
 mod workshop;
@@ -102,6 +103,8 @@ fn main() {
             // Shell
             commands::reveal_in_explorer,
             commands::minimize_to_tray,
+            // Storage
+            commands::detect_storage_medium,
             // Workshop
             commands::get_workshop_projects,
             commands::create_workshop_project,

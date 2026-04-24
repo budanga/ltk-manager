@@ -23,6 +23,7 @@ import type {
   Profile,
   SaveProjectConfigArgs,
   Settings,
+  StorageMedium,
   ValidationResult,
   WorkshopLayerInfo,
   WorkshopProject,
@@ -164,6 +165,10 @@ export const api = {
   // Shell
   revealInExplorer: (path: string) => invokeResult<void>("reveal_in_explorer", { path }),
   minimizeToTray: () => invokeResult<void>("minimize_to_tray"),
+
+  // Storage
+  detectStorageMedium: (path: string) =>
+    invokeResult<StorageMedium>("detect_storage_medium", { path }),
 
   // Workshop
   getWorkshopProjects: () => invokeResult<WorkshopProject[]>("get_workshop_projects"),

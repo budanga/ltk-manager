@@ -122,7 +122,7 @@ impl ModLibrary {
         f(&storage_dir, &index)
     }
 
-    /// Mutate index: acquire lock, load, run closure, save, invalidate overlay.
+    /// Mutate index: acquire lock, load, run closure, save.
     ///
     /// Records the completion timestamp so the file watcher ignores filesystem
     /// notifications caused by our own writes for [`WATCHER_SUPPRESS_SECS`].
@@ -136,9 +136,6 @@ impl ModLibrary {
         let mut index = load_library_index(&storage_dir)?;
         let result = f(&storage_dir, &mut index)?;
         save_library_index(&storage_dir, &index)?;
-        if let Err(e) = invalidate_overlay_for_profile(&storage_dir, &index) {
-            tracing::warn!("Failed to invalidate overlay: {}", e);
-        }
         // Drop WAD report cache entries for mods that are no longer in the
         // library after this mutation (e.g. uninstall paths).
         if let Some(state) = self
@@ -451,20 +448,6 @@ pub(super) fn save_library_index(storage_dir: &Path, index: &LibraryIndex) -> Ap
     to_save.version = schema_migration::CURRENT_VERSION;
     let contents = serde_json::to_string_pretty(&to_save)?;
     fs::write(path, contents)?;
-    Ok(())
-}
-
-/// Delete the active profile's `overlay.json` to force the next build to rebuild.
-fn invalidate_overlay_for_profile(storage_dir: &Path, index: &LibraryIndex) -> AppResult<()> {
-    let active_profile = get_active_profile(index)?;
-    let overlay_json = storage_dir
-        .join("profiles")
-        .join(active_profile.slug.as_str())
-        .join("overlay.json");
-    if overlay_json.exists() {
-        std::fs::remove_file(&overlay_json)?;
-        tracing::info!("Invalidated overlay for profile {}", active_profile.slug);
-    }
     Ok(())
 }
 

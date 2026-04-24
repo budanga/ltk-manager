@@ -40,6 +40,7 @@ export type { Profile } from "./Profile";
 export type { ProfileSlug } from "./ProfileSlug";
 export type { SaveProjectConfigArgs } from "./SaveProjectConfigArgs";
 export type { Settings } from "./Settings";
+export type { StorageMedium } from "./StorageMedium";
 export type { Theme } from "./Theme";
 export type { ValidationResult } from "./ValidationResult";
 export type { WadBlocklistEntry } from "./WadBlocklistEntry";
