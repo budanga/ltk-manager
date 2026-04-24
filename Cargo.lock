@@ -2853,6 +2853,7 @@ dependencies = [
  "uuid",
  "walkdir",
  "webp",
+ "windows-sys 0.59.0",
  "xxhash-rust",
  "zip 2.4.2",
  "zstd",
