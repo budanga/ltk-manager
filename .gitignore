@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Only pnpm is supported (see packageManager in package.json)
+package-lock.json
+yarn.lock
+
 # Build output
 dist/
 
