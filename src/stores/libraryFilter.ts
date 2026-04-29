@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SortField = "priority" | "name" | "installedAt" | "enabled";
+export type SortField = "priority" | "name" | "installedAt" | "enabled" | "champion" | "role";
 export type SortDirection = "asc" | "desc";
 
 export interface SortConfig {
