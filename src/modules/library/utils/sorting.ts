@@ -1,4 +1,4 @@
-import { CHAMPION_ROLES, getChampionRoles, ROLE_LABELS, ROLE_ORDER } from "@/championRoles";
+import { CHAMPION_ROLES, getChampionRoles, ROLE_LABELS, ROLE_ORDER } from "@/data/championRoles";
 import type { InstalledMod, LibraryFolder } from "@/lib/tauri";
 import type { SortConfig } from "@/stores/libraryFilter";
 
