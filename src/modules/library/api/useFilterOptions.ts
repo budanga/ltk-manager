@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 
 import type { InstalledMod } from "@/lib/tauri";
+import { getEffectiveChampions } from "@/modules/library/utils/sorting";
+
+import { useAllModWadReports } from "./useModWadReport";
 
 export interface FilterOptions {
   tags: string[];
@@ -9,6 +12,8 @@ export interface FilterOptions {
 }
 
 export function useFilterOptions(mods: InstalledMod[]): FilterOptions {
+  const { data: wadReports } = useAllModWadReports();
+
   return useMemo(() => {
     const tags = new Set<string>();
     const champions = new Set<string>();
@@ -16,7 +21,9 @@ export function useFilterOptions(mods: InstalledMod[]): FilterOptions {
 
     for (const mod of mods) {
       for (const t of mod.tags) tags.add(t);
-      for (const c of mod.champions) champions.add(c);
+      const report = wadReports ? wadReports[mod.id] : undefined;
+      const champs = getEffectiveChampions(mod, report);
+      for (const c of champs) champions.add(c);
       for (const m of mod.maps) maps.add(m);
     }
 
@@ -25,5 +32,5 @@ export function useFilterOptions(mods: InstalledMod[]): FilterOptions {
       champions: [...champions].sort(),
       maps: [...maps].sort(),
     };
-  }, [mods]);
+  }, [mods, wadReports]);
 }

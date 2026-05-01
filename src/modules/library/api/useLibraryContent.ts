@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { InstalledMod, LibraryFolder } from "@/lib/tauri";
-import { groupByChampion, groupByRole, sortFolders, sortModsByFolder } from "@/modules/library/utils";
 import type { ModGroup } from "@/modules/library/utils";
+import {
+  groupByChampion,
+  groupByRole,
+  sortFolders,
+  sortModsByFolder,
+} from "@/modules/library/utils";
 import { usePatcherStatus } from "@/modules/patcher";
 import { useHasActiveFilters, useLibraryFilterStore } from "@/stores";
 import { useLibraryViewStore } from "@/stores/libraryView";
@@ -10,6 +15,7 @@ import { useLibraryViewStore } from "@/stores/libraryView";
 import { useFolderOrder, useFolders } from "./queries";
 import { useFilteredMods } from "./useFilteredMods";
 import { useLibraryViewMode } from "./useLibraryViewMode";
+import { useAllModWadReports } from "./useModWadReport";
 
 const ROOT_FOLDER_ID = "root";
 
@@ -52,6 +58,7 @@ export function useLibraryContent({
   const { data: folders } = useFolders();
   const { data: folderOrder } = useFolderOrder();
   const cleanupStaleFolders = useLibraryViewStore((s) => s.cleanupStaleFolders);
+  const { data: wadReports } = useAllModWadReports();
 
   useEffect(() => {
     if (!folders) return;
@@ -62,7 +69,8 @@ export function useLibraryContent({
   const isSearching = searchQuery.length > 0;
   const isPrioritySort = sort.field === "priority";
   const isGroupedSort = sort.field === "champion" || sort.field === "role";
-  const dndDisabled = isSearching || isPatcherActive || !isPrioritySort || hasActiveFilters || isGroupedSort;
+  const dndDisabled =
+    isSearching || isPatcherActive || !isPrioritySort || hasActiveFilters || isGroupedSort;
   const isFlatMode = isSearching || hasActiveFilters;
 
   const folderMap = useMemo(() => {
@@ -110,7 +118,9 @@ export function useLibraryContent({
 
     if (isGroupedSort) {
       const groups =
-        sort.field === "champion" ? groupByChampion(filteredMods) : groupByRole(filteredMods);
+        sort.field === "champion"
+          ? groupByChampion(filteredMods, wadReports)
+          : groupByRole(filteredMods, wadReports);
       if (groups.length === 0)
         return { type: "empty", hasSearch: isSearching, hasFilters: hasActiveFilters };
       return { type: "grouped", groups };
@@ -145,6 +155,7 @@ export function useLibraryContent({
     folderId,
     folderMap,
     sortedModsByFolder,
+    wadReports,
   ]);
 
   return {

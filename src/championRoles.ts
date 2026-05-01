@@ -10,7 +10,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 export const ROLE_ORDER: Role[] = ["top", "jg", "mid", "adc", "sup"];
 
-const CHAMPION_ROLES: Record<string, Role[]> = {
+export const CHAMPION_ROLES: Record<string, Role[]> = {
   aatrox: ["top", "jg"],
   ahri: ["mid"],
   akali: ["mid", "top"],
