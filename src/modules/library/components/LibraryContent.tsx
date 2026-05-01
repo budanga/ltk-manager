@@ -2,6 +2,7 @@ import type { AppError, InstalledMod } from "@/lib/tauri";
 import { useLibraryContent, useReorderFolderMods, useReorderMods } from "@/modules/library/api";
 
 import { FolderHeader } from "./FolderHeader";
+import { GroupedModList } from "./GroupedModList";
 import { LibraryContextMenu } from "./LibraryContextMenu";
 import { LibraryEmptyState, LibraryErrorState, LibraryLoadingState } from "./LibraryStates";
 import { ModDetailsDialog } from "./ModDetailsDialog";
@@ -69,6 +70,27 @@ export function LibraryContent({
               disabled={dndDisabled}
               onViewDetails={setDetailsMod}
               className={`${gridClass(viewMode)} stagger-enter`}
+            />
+          </div>
+        </LibraryContextMenu>
+        <ModDetailsDialog
+          open={detailsMod !== null}
+          mod={detailsMod}
+          onClose={() => setDetailsMod(null)}
+        />
+      </>
+    );
+  }
+
+  if (contentView.type === "grouped") {
+    return (
+      <>
+        <LibraryContextMenu>
+          <div className="flex-1 overflow-auto p-6">
+            <GroupedModList
+              groups={contentView.groups}
+              viewMode={viewMode}
+              onViewDetails={setDetailsMod}
             />
           </div>
         </LibraryContextMenu>

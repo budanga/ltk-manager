@@ -8,6 +8,8 @@ const SORT_OPTIONS = [
   { value: "installedAt:desc", label: "Newest First" },
   { value: "installedAt:asc", label: "Oldest First" },
   { value: "enabled:asc", label: "Enabled First" },
+  { value: "champion:asc", label: "By Champion" },
+  { value: "role:asc", label: "By Role" },
 ];
 
 const LABEL_MAP = Object.fromEntries(SORT_OPTIONS.map((o) => [o.value, o.label]));

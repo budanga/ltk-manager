@@ -14,6 +14,7 @@ export * from "./FolderContextMenu";
 export * from "./FolderHeader";
 export * from "./FolderNameForm";
 export * from "./FolderRow";
+export * from "./GroupedModList";
 export * from "./ImportProgressDialog";
 export * from "./LayerPickerPopover";
 export * from "./LayerPopover";

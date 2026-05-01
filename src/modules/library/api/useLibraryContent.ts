@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { InstalledMod, LibraryFolder } from "@/lib/tauri";
-import { sortFolders, sortModsByFolder } from "@/modules/library/utils";
+import { groupByChampion, groupByRole, sortFolders, sortModsByFolder } from "@/modules/library/utils";
+import type { ModGroup } from "@/modules/library/utils";
 import { usePatcherStatus } from "@/modules/patcher";
 import { useHasActiveFilters, useLibraryFilterStore } from "@/stores";
 import { useLibraryViewStore } from "@/stores/libraryView";
@@ -18,6 +19,7 @@ export type ContentView =
   | { type: "empty"; hasSearch: boolean; hasFilters: boolean }
   | { type: "flat"; mods: InstalledMod[] }
   | { type: "folder-drilldown"; folder: LibraryFolder; mods: InstalledMod[] }
+  | { type: "grouped"; groups: ModGroup[] }
   | {
       type: "unified";
       folders: LibraryFolder[];
@@ -59,7 +61,8 @@ export function useLibraryContent({
 
   const isSearching = searchQuery.length > 0;
   const isPrioritySort = sort.field === "priority";
-  const dndDisabled = isSearching || isPatcherActive || !isPrioritySort || hasActiveFilters;
+  const isGroupedSort = sort.field === "champion" || sort.field === "role";
+  const dndDisabled = isSearching || isPatcherActive || !isPrioritySort || hasActiveFilters || isGroupedSort;
   const isFlatMode = isSearching || hasActiveFilters;
 
   const folderMap = useMemo(() => {
@@ -105,6 +108,14 @@ export function useLibraryContent({
       return { type: "flat", mods: filteredMods };
     }
 
+    if (isGroupedSort) {
+      const groups =
+        sort.field === "champion" ? groupByChampion(filteredMods) : groupByRole(filteredMods);
+      if (groups.length === 0)
+        return { type: "empty", hasSearch: isSearching, hasFilters: hasActiveFilters };
+      return { type: "grouped", groups };
+    }
+
     if (folderId && folderId !== ROOT_FOLDER_ID) {
       const folder = folderMap.get(folderId);
       if (!folder) return { type: "empty", hasSearch: false, hasFilters: false };
@@ -127,6 +138,8 @@ export function useLibraryContent({
     filteredMods,
     orderedUserFolders,
     isFlatMode,
+    isGroupedSort,
+    sort.field,
     isSearching,
     hasActiveFilters,
     folderId,
