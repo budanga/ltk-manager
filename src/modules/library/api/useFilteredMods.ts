@@ -8,7 +8,8 @@ import { useLibraryFilterStore } from "@/stores";
 import { useAllModWadReports } from "./useModWadReport";
 
 export function useFilteredMods(mods: InstalledMod[], searchQuery: string): InstalledMod[] {
-  const { selectedTags, selectedChampions, selectedMaps, sort } = useLibraryFilterStore();
+  const { selectedTags, selectedChampions, showOnlyEnabled, selectedMaps, sort } =
+    useLibraryFilterStore();
   const { data: wadReports } = useAllModWadReports();
 
   return useMemo(() => {
@@ -19,6 +20,10 @@ export function useFilteredMods(mods: InstalledMod[], searchQuery: string): Inst
       result = result.filter(
         (mod) => mod.displayName.toLowerCase().includes(q) || mod.name.toLowerCase().includes(q),
       );
+    }
+
+    if (showOnlyEnabled) {
+      result = result.filter((mod) => mod.enabled);
     }
 
     if (selectedTags.size > 0) {
@@ -36,5 +41,14 @@ export function useFilteredMods(mods: InstalledMod[], searchQuery: string): Inst
     }
 
     return sortMods(result, sort);
-  }, [mods, searchQuery, selectedTags, selectedChampions, selectedMaps, sort, wadReports]);
+  }, [
+    mods,
+    searchQuery,
+    selectedTags,
+    selectedChampions,
+    selectedMaps,
+    showOnlyEnabled,
+    sort,
+    wadReports,
+  ]);
 }

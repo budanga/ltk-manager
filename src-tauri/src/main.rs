@@ -5,6 +5,7 @@
 
 mod commands;
 mod deep_link;
+mod diagnostics;
 mod error;
 mod hotkeys;
 mod legacy_patcher;
@@ -42,6 +43,7 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(logging_guards)
         .setup(setup::run)
         .invoke_handler(tauri::generate_handler![
@@ -63,6 +65,7 @@ fn main() {
             commands::toggle_mod,
             commands::set_mod_layers,
             commands::enable_mod_with_layers,
+            commands::edit_mod_metadata,
             commands::inspect_modpkg,
             commands::get_mod_thumbnail,
             commands::get_storage_directory,
@@ -105,6 +108,9 @@ fn main() {
             commands::minimize_to_tray,
             // Storage
             commands::detect_storage_medium,
+            // Diagnostics
+            commands::run_diagnostics,
+            commands::open_elevated_terminal,
             // Workshop
             commands::get_workshop_projects,
             commands::create_workshop_project,
@@ -130,6 +136,7 @@ fn main() {
             commands::delete_project_layer,
             commands::reorder_project_layers,
             commands::update_layer_description,
+            commands::add_files_to_layer,
             // Deep Link
             commands::deep_link_install_mod,
             // for dynamic icons
